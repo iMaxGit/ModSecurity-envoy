@@ -28,7 +28,7 @@ void WebhookFetcher::invoke(const std::string& body) {
   Http::RequestMessagePtr message = Http::Utility::prepareHeaders(uri_);
   message->headers().setReferenceMethod(Http::Headers::get().MethodValues.Post);
   message->headers().setReferenceContentType(Http::Headers::get().ContentTypeValues.Json);
-  request.headers().setContentLength(body.size());
+  message.headers().setContentLength(body.size());
   message->body() = std::make_unique<Buffer::OwnedImpl>(body);
   if (secret_.size()) {
     auto& crypto_util = Envoy::Common::Crypto::UtilitySingleton::get();
