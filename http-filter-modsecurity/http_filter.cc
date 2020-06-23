@@ -5,7 +5,7 @@
 #include "http_filter.h"
 #include "utility.h"
 
-#include "common/common/stack_array.h"
+#include "absl/container/fixed_array.h"
 #include "common/http/utility.h"
 #include "common/http/headers.h"
 #include "common/config/metadata.h"
@@ -174,7 +174,7 @@ FilterDataStatus HttpModSecurityFilter::decodeData(Buffer::Instance& data, bool 
     }
 
     uint64_t num_slices = data.getRawSlices(nullptr, 0);
-    STACK_ARRAY(slices, Buffer::RawSlice, num_slices);
+    absl::FixedArray<Buffer::RawSlice> slices(num_slices);
     data.getRawSlices(slices.begin(), num_slices);
     for (const Buffer::RawSlice& slice : slices) {
         size_t requestLen = modsec_transaction_->getRequestBodyLength();
@@ -259,7 +259,7 @@ FilterDataStatus HttpModSecurityFilter::encodeData(Buffer::Instance& data, bool 
     }
     
     uint64_t num_slices = data.getRawSlices(nullptr, 0);
-    STACK_ARRAY(slices, Buffer::RawSlice, num_slices);
+    absl::FixedArray<Buffer::RawSlice> slices(num_slices);
     data.getRawSlices(slices.begin(), num_slices);
     for (const Buffer::RawSlice& slice : slices) {
         size_t responseLen = modsec_transaction_->getResponseBodyLength();
