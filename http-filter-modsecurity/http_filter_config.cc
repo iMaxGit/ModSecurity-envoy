@@ -21,14 +21,14 @@ public:
                                                      FactoryContext& context) override {
 
     return createFilter(
-        Envoy::MessageUtil::downcastAndValidate<const modsecurity::ModsecurityFilterConfigDecoder&>(proto_config, context.messageValidationVisitor()), context);
+        Envoy::MessageUtil::downcastAndValidate<const envoy::config::filter::http::modsecurity::ModsecurityFilterConfigDecoder&>(proto_config, context.messageValidationVisitor()), context);
   }
 
   /**
    *  Return the Protobuf Message that represents your config incase you have config proto
    */
   ProtobufTypes::MessagePtr createEmptyConfigProto() override {
-    return ProtobufTypes::MessagePtr{new modsecurity::ModsecurityFilterConfigDecoder()};
+    return ProtobufTypes::MessagePtr{new envoy::config::filter::http::modsecurity::ModsecurityFilterConfigDecoder()};
   }
 
   std::string name() const override { 
@@ -36,7 +36,7 @@ public:
   }
 
 private:
-  Http::FilterFactoryCb createFilter(const modsecurity::ModsecurityFilterConfigDecoder& proto_config, FactoryContext& context) {
+  Http::FilterFactoryCb createFilter(const envoy::config::filter::http::modsecurity::ModsecurityFilterConfigDecoder& proto_config, FactoryContext& context) {
     Http::HttpModSecurityFilterConfigSharedPtr config =
         std::make_shared<Http::HttpModSecurityFilterConfig>(proto_config, context);
 
@@ -48,7 +48,7 @@ private:
   }
 
   void translateHttpModSecurityFilter(const Json::Object& json_config,
-                                        modsecurity::ModsecurityFilterConfigDecoder& proto_config) {
+                                        envoy::config::filter::http::modsecurity::ModsecurityFilterConfigDecoder& proto_config) {
     // normally we want to validate the json_config againts a defined json-schema here.
     JSON_UTIL_SET_STRING(json_config, proto_config, rules_path);
     JSON_UTIL_SET_STRING(json_config, proto_config, rules_inline);

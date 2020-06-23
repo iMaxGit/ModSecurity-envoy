@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package modsecurity;
+package envoy.config.filter.http.modsecurity;
 
 import "envoy/api/v2/core/http_uri.proto";
 import "validate/validate.proto";

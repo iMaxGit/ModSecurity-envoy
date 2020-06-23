@@ -16,7 +16,7 @@
 namespace Envoy {
 namespace Http {
 
-HttpModSecurityFilterConfig::HttpModSecurityFilterConfig(const modsecurity::ModsecurityFilterConfigDecoder& proto_config,
+HttpModSecurityFilterConfig::HttpModSecurityFilterConfig(const envoy::config::filter::http::modsecurity::ModsecurityFilterConfigDecoder& proto_config,
                                                          Server::Configuration::FactoryContext& context)
     : rules_path_(proto_config.rules_path()),
       rules_inline_(proto_config.rules_inline()),

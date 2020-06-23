@@ -19,13 +19,13 @@ namespace Http {
 class HttpModSecurityFilterConfig : public Logger::Loggable<Logger::Id::filter>,
                                     public WebhookFetcherCallback {
 public:
-  HttpModSecurityFilterConfig(const modsecurity::ModsecurityFilterConfigDecoder& proto_config,
+  HttpModSecurityFilterConfig(const envoy::config::filter::http::modsecurity::ModsecurityFilterConfigDecoder& proto_config,
                               Server::Configuration::FactoryContext&);
   ~HttpModSecurityFilterConfig();
 
   const std::string& rules_path() const { return rules_path_; }
   const std::string& rules_inline() const { return rules_inline_; }
-  const modsecurity::ModsecurityWebhook& webhook() const { return webhook_; }
+  const envoy::config::filter::http::modsecurity::ModsecurityWebhook& webhook() const { return webhook_; }
 
   WebhookFetcherSharedPtr webhook_fetcher();
 
@@ -45,7 +45,7 @@ private:
 
   const std::string rules_path_;
   const std::string rules_inline_;
-  const modsecurity::ModsecurityWebhook webhook_;
+  const envoy::config::filter::http::modsecurity::ModsecurityWebhook webhook_;
   ThreadLocal::SlotPtr tls_;
 };
 
