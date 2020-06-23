@@ -1,73 +1,40 @@
 #include "utility.h"
 #include "modsecurity/rule_message.h"
+#include "common/protobuf/protobuf.h"
+#include "common/protobuf/utility.h"
 
 namespace Envoy {
 namespace Http {
 
-std::string escapeJson(const std::string& s) {
-    std::ostringstream o;
-    for (auto c = s.cbegin(); c != s.cend(); c++) {
-        switch (*c) {
-        case '"': o << "\\\""; break;
-        case '\\': o << "\\\\"; break;
-        case '\b': o << "\\b"; break;
-        case '\f': o << "\\f"; break;
-        case '\n': o << "\\n"; break;
-        case '\r': o << "\\r"; break;
-        case '\t': o << "\\t"; break;
-        default:
-            if ('\x00' <= *c && *c <= '\x1f') {
-                o << "\\u"
-                  << std::hex << std::setw(4) << std::setfill('0') << static_cast<int>(*c);
-            } else {
-                o << *c;
-            }
-        }
-    }
-    return o.str();
-}
-
-// TODO - replace with a real json (rapidjson?) implementation
 std::string getRuleMessageAsJsonString(const modsecurity::RuleMessage* ruleMessage) {
-    std::ostringstream ss;
-
-    ss << std::boolalpha
-       << "{" 
-       << "\"accuracy\": " << ruleMessage->m_accuracy << ", "
-       << "\"clientIpAddress\": \"" << escapeJson(ruleMessage->m_clientIpAddress) << "\", "
-       << "\"data\": \"" << escapeJson(ruleMessage->m_data) << "\", "
-       << "\"id\": \"" << escapeJson(ruleMessage->m_id) << "\", "
-       << "\"isDisruptive\": " << ruleMessage->m_isDisruptive << ", "
-       << "\"match\": \"" << escapeJson(ruleMessage->m_match) << "\", "
-       << "\"maturity\": " << ruleMessage->m_maturity << ", "
-       << "\"message\": \"" << escapeJson(ruleMessage->m_message) << "\", "
-       << "\"noAuditLog\": " << ruleMessage->m_noAuditLog << ", "
-       << "\"phase\": " << ruleMessage->m_phase << ", "
-       << "\"reference\": \"" << escapeJson(ruleMessage->m_reference) << "\", "
-       << "\"rev\": \"" << escapeJson(ruleMessage->m_rev) << "\", "
-       // Rule *m_rule;
-       << "\"ruleFile\": \"" << escapeJson(ruleMessage->m_ruleFile) << "\", "
-       << "\"ruleId\": " << ruleMessage->m_ruleId << ", "
-       << "\"ruleLine\": " << ruleMessage->m_ruleLine << ", "
-       << "\"saveMessage\": " << ruleMessage->m_saveMessage << ", "
-       << "\"serverIpAddress\": \"" << escapeJson(ruleMessage->m_serverIpAddress) << "\", "
-       << "\"severity\": " << ruleMessage->m_severity << ", "
-       << "\"uriNoQueryStringDecoded\": \"" << escapeJson(ruleMessage->m_uriNoQueryStringDecoded) << "\", "
-       << "\"ver\": \"" << escapeJson(ruleMessage->m_ver) << "\", "
-       << "\"tags\": [";
-
-    auto begin = ruleMessage->m_tags.cbegin();
-    auto end = ruleMessage->m_tags.cend();
-    if (begin != end) {
-        ss << "\"" << escapeJson(*begin++) << "\"";
+    ProtobufWkt::Struct document;
+    auto* document_fields = document.mutable_fields();
+    (*document_fields)["accuracy"] = ValueUtil::numberValue(ruleMessage->m_accuracy);
+    (*document_fields)["clientIpAddress"] = ValueUtil::stringValue(*ruleMessage->m_clientIpAddress);
+    (*document_fields)["data"] = ValueUtil::stringValue(ruleMessage->m_data);
+    (*document_fields)["id"] = ValueUtil::stringValue(*ruleMessage->m_id);
+    (*document_fields)["isDisruptive"] = ValueUtil::boolValue(ruleMessage->m_isDisruptive);
+    (*document_fields)["match"] = ValueUtil::stringValue(ruleMessage->m_match);
+    (*document_fields)["maturity"] = ValueUtil::numberValue(ruleMessage->m_maturity);
+    (*document_fields)["message"] = ValueUtil::stringValue(ruleMessage->m_message);
+    (*document_fields)["noAuditLog"] = ValueUtil::boolValue(ruleMessage->m_noAuditLog);
+    (*document_fields)["phase"] = ValueUtil::numberValue(ruleMessage->m_phase);
+    (*document_fields)["reference"] = ValueUtil::stringValue(ruleMessage->m_reference);
+    (*document_fields)["rev"] = ValueUtil::stringValue(ruleMessage->m_rev);
+    (*document_fields)["ruleFile"] = ValueUtil::stringValue(*ruleMessage->m_ruleFile);
+    (*document_fields)["ruleId"] = ValueUtil::numberValue(ruleMessage->m_ruleId);
+    (*document_fields)["ruleLine"] = ValueUtil::numberValue(ruleMessage->m_ruleLine);
+    (*document_fields)["saveMessage"] = ValueUtil::boolValue(ruleMessage->m_saveMessage);
+    (*document_fields)["serverIpAddress"] = ValueUtil::stringValue(*ruleMessage->m_serverIpAddress);
+    (*document_fields)["severity"] = ValueUtil::numberValue(ruleMessage->m_severity);
+    (*document_fields)["uriNoQueryStringDecoded"] = ValueUtil::stringValue(*ruleMessage->m_uriNoQueryStringDecoded);
+    (*document_fields)["ver"] = ValueUtil::stringValue(ruleMessage->m_ver);
+    std::vector<ProtobufWkt::Value> tag_array;
+    for (const auto& tag : ruleMessage->m_tags) {
+        tag_array.push_back(ValueUtil::stringValue(tag));
     }
-    while (begin != end) {
-        ss << ", "
-           << "\"" << escapeJson(*begin++) << "\"";
-    }
-    ss << "]"
-       << "}";
-    return ss.str();
+    (*document_fields)["tags"] = tag_array;
+    return MessageUtil::getJsonStringFromMessage(document);
 }
 
 } // namespace Http
