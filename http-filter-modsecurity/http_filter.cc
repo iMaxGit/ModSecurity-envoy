@@ -284,12 +284,12 @@ FilterDataStatus HttpModSecurityFilter::encodeData(Buffer::Instance& data, bool 
     return getResponseStatus();
 }
 
-FilterTrailersStatus HttpModSecurityFilter::encodeTrailers(Http::RequestTrailerMap&) {
+FilterTrailersStatus HttpModSecurityFilter::encodeTrailers(Http::ResponseTrailerMap&) {
     return FilterTrailersStatus::Continue;
 }
 
 
-FilterMetadataStatus HttpModSecurityFilter::encodeMetadata(MetadataMapVector& metadata_map) {
+FilterMetadataStatus HttpModSecurityFilter::encodeMetadata(MetadataMap& metadata_map) {
     return FilterMetadataStatus::Continue;
 }
 

@@ -91,9 +91,9 @@ public:
   FilterHeadersStatus encode100ContinueHeaders(Http::ResponseHeaderMap& headers) override;
   FilterHeadersStatus encodeHeaders(Http::ResponseHeaderMap&, bool end_stream) override;
   FilterDataStatus encodeData(Buffer::Instance&, bool end_stream) override;
-  FilterTrailersStatus encodeTrailers(Http::RequestTrailerMap&) override;
+  FilterTrailersStatus encodeTrailers(Http::ResponseTrailerMap&) override;
   void setEncoderFilterCallbacks(StreamEncoderFilterCallbacks&) override;
-  FilterMetadataStatus encodeMetadata(MetadataMapVector& metadata_map) override;
+  FilterMetadataStatus encodeMetadata(MetadataMap& metadata_map) override;
 
 private:
   const HttpModSecurityFilterConfigSharedPtr config_;
