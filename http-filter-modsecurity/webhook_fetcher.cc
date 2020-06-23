@@ -19,28 +19,29 @@ WebhookFetcher::WebhookFetcher(Upstream::ClusterManager& cm,
 
 WebhookFetcher::~WebhookFetcher() {}
 
-void WebhookFetcher::fetch(const std::string& body) {
+void WebhookFetcher::invoke(const std::string& body) {
   if (!cm_.get(uri_.cluster())) {
     ENVOY_LOG(error, "Webhook can't be invoked. cluster '{}' not found", uri_.cluster());
     return;
   }
 
   Http::RequestMessagePtr message = Http::Utility::prepareHeaders(uri_);
-  message->headers().setMethod().value().setReference(Http::Headers::get().MethodValues.Post);
-  message->headers().setContentType().value().setReference(Http::Headers::get().ContentTypeValues.Json);
-  message->headers().setContentType().value().setInteger(body.size());
+  message->headers().setReferenceMethod(Http::Headers::get().MethodValues.Post);
+  message->headers().setReferenceContentType(Http::Headers::get().ContentTypeValues.Json);
+  request.headers().setContentLength(body.size());
   message->body() = std::make_unique<Buffer::OwnedImpl>(body);
   if (secret_.size()) {
+    auto& crypto_util = Envoy::Common::Crypto::UtilitySingleton::get();
     // Add digest to headers
     message->headers().addCopy(WebhookHeaders::get().SignatureType, WebhookConstants::get().Sha256Hmac);
-    message->headers().addCopy(WebhookHeaders::get().SignatureValue, Hex::encode(Envoy::Common::Crypto::Utility::getSha256Hmac(secret_, body)));
+    message->headers().addCopy(WebhookHeaders::get().SignatureValue, Hex::encode(crypto_util.getSha256Hmac(secret_, body)));
   }
 
   ENVOY_LOG(debug, "Webhook [uri = {}]: start", uri_.uri());
-  request_ = cm_.httpAsyncClientForCluster(uri_.cluster())
-                 .send(std::move(message), *this,
-                       Http::AsyncClient::RequestOptions().setTimeout(std::chrono::milliseconds(
-                           DurationUtil::durationToMilliseconds(uri_.timeout()))));
+  cm_.httpAsyncClientForCluster(uri_.cluster())
+         .send(std::move(message), *this,
+               Http::AsyncClient::RequestOptions().setTimeout(std::chrono::milliseconds(
+                   DurationUtil::durationToMilliseconds(uri_.timeout()))));
 }
 
 void WebhookFetcher::onSuccess(const Http::AsyncClient::Request& request,
