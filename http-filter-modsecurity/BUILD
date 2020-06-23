@@ -7,13 +7,11 @@ load(
     "envoy_cc_test",
 )
 
-load("@envoy_api//bazel:api_build_system.bzl", "api_proto_library")
+load("@envoy_api//bazel:api_build_system.bzl", "api_proto_package")
 
-api_proto_library(
-    name = "http_filter_proto",
-    srcs = ["http_filter.proto"],
+api_proto_package(
     deps = [
-        # TODO - "@envoy_api//envoy/api/v2/core:http_uri" (bad visibility)
+        "@envoy_api//envoy/api/v2/core:pkg"
     ]
 )
 
@@ -24,7 +22,7 @@ envoy_cc_library(
     hdrs = glob(["utility.h", "http_filter.h", "webhook_fetcher.h", "well_known_names.h"]),
     repository = "@envoy",
     deps = [
-        ":http_filter_proto_cc",
+        ":pkg_cc_proto",
         "//:libmodsecurity",
         "@envoy//source/exe:envoy_common_lib",
     ],

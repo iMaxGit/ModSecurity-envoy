@@ -5,3 +5,4 @@ owasp-modsecurity*
 .vscode
 .cache
 build_release*/
+/WORKSPACE
