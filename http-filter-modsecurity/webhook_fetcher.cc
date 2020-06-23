@@ -49,7 +49,7 @@ void WebhookFetcher::invoke(const std::string& body) {
   //                       DurationUtil::durationToMilliseconds(uri_.timeout()))));
 }
 
-void WebhookFetcher::onSuccess(Http::MessagePtr&& response) {
+void WebhookFetcher::onSuccess(Http::ResponseMessagePtr&& response) {
   const uint64_t status_code = Http::Utility::getResponseStatus(response->headers());
   if (status_code == enumToInt(Http::Code::OK)) {
     ENVOY_LOG(debug, "Webhook [uri = {}]: success", uri_.uri());
