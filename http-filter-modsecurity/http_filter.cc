@@ -322,7 +322,7 @@ FilterHeadersStatus HttpModSecurityFilter::getRequestHeadersStatus() {
     }
     // If disruptive, hold until request_processed_, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::Rules::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSet::EnabledRuleEngine ? 
                 FilterHeadersStatus::StopIteration : 
                 FilterHeadersStatus::Continue;
 }
@@ -338,7 +338,7 @@ FilterDataStatus HttpModSecurityFilter::getRequestStatus() {
     }
     // If disruptive, hold until request_processed_, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::Rules::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSet::EnabledRuleEngine ? 
                 FilterDataStatus::StopIterationAndBuffer : 
                 FilterDataStatus::Continue;
 }
@@ -351,7 +351,7 @@ FilterHeadersStatus HttpModSecurityFilter::getResponseHeadersStatus() {
     }
     // If disruptive, hold until response_processed_, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::Rules::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSet::EnabledRuleEngine ? 
                 FilterHeadersStatus::StopIteration : 
                 FilterHeadersStatus::Continue;
 }
@@ -364,7 +364,7 @@ FilterDataStatus HttpModSecurityFilter::getResponseStatus() {
     }
     // If disruptive, hold until response_processed_, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::Rules::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSet::EnabledRuleEngine ? 
                 FilterDataStatus::StopIterationAndBuffer : 
                 FilterDataStatus::Continue;
 
