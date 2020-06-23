@@ -72,8 +72,10 @@ public:
   ~WebhookFetcher() override;
 
   // Http::AsyncClient::Callbacks
-  void onSuccess(Http::MessagePtr&& response) override;
-  void onFailure(Http::AsyncClient::FailureReason reason) override;
+  void onSuccess(const Http::AsyncClient::Request& request,
+                 Http::ResponseMessagePtr&& response) override;
+  void onFailure(const Http::AsyncClient::Request&,
+                 Http::AsyncClient::FailureReason reason) override;
 
   /**
    * Calls the webhook remote URI
