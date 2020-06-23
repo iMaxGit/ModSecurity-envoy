@@ -20,13 +20,8 @@ case $1 in
         git checkout $2
         ;;
     build )
-        if ! realpath modsecurity/include 2&>1 > /dev/null; then
-            echo "Not found ModSecurity headers"
-            exit 1
-        fi
-
-        if ! realpath modsecurity/libmodsecurity.a 2&>1 > /dev/null; then
-            echo "Build ModSecurity first"
+        if ! pkg-config modsecurity --exists; then
+            echo "Not found ModSecurity"
             exit 1
         fi
 
