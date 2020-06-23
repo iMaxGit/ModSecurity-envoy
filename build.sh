@@ -44,6 +44,8 @@ local_repository(
     path = "envoy",
 )
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
 http_archive(
     name = "bazel_pkg_config",
     strip_prefix = "bazel_pkg_config-master",
