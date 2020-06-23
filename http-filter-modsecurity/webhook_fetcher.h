@@ -65,7 +65,7 @@ class WebhookFetcher : public Logger::Loggable<Logger::Id::filter>,
                        public Http::AsyncClient::Callbacks {
 public:
   WebhookFetcher(Upstream::ClusterManager& cm, 
-                 const modsecurity::HttpUri& uri, 
+                 const envoy::config::core::v3::HttpUri& uri, 
                  const std::string& secret, 
                  WebhookFetcherCallback& callback);
 
@@ -82,7 +82,7 @@ public:
 
 private:
   Upstream::ClusterManager& cm_;
-  const modsecurity::HttpUri& uri_;
+  const envoy::config::core::v3::HttpUri& uri_;
   const std::vector<uint8_t> secret_;
   WebhookFetcherCallback& callback_;
 };
