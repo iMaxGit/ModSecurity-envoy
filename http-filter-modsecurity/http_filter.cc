@@ -6,12 +6,15 @@
 #include "utility.h"
 
 #include "absl/container/fixed_array.h"
+#include "envoy/server/filter_config.h"
 #include "common/http/utility.h"
 #include "common/http/headers.h"
 #include "common/config/metadata.h"
-#include "envoy/server/filter_config.h"
 #include "common/json/json_loader.h"
+
+#include "modsecurity/rule.h"
 #include "modsecurity/rule_message.h"
+#include "modsecurity/rules_set_properties.h"
 
 namespace Envoy {
 namespace Http {
@@ -99,7 +102,7 @@ const char* getProtocolString(const Protocol protocol) {
   NOT_REACHED_GCOVR_EXCL_LINE;
 }
 
-FilterHeadersStatus HttpModSecurityFilter::decodeHeaders(HeaderMap& headers, bool end_stream) {
+FilterHeadersStatus HttpModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& headers, bool end_stream) {
     ENVOY_LOG(debug, "HttpModSecurityFilter::decodeHeaders");
     if (intervined_ || request_processed_) {
         ENVOY_LOG(debug, "Processed");
@@ -142,7 +145,7 @@ FilterHeadersStatus HttpModSecurityFilter::decodeHeaders(HeaderMap& headers, boo
     }
     
     headers.iterate(
-            [](const HeaderEntry& header, void* context) -> HeaderMap::Iterate {
+            [](const HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
                 
                 std::string k = std::string(header.key().getStringView());
                 std::string v = std::string(header.value().getStringView());
@@ -153,7 +156,7 @@ FilterHeadersStatus HttpModSecurityFilter::decodeHeaders(HeaderMap& headers, boo
                 if (k == Headers::get().Host.get()) {
                     static_cast<HttpModSecurityFilter*>(context)->modsec_transaction_->addRequestHeader(Headers::get().HostLegacy.get().c_str(), v.c_str());
                 }
-                return HeaderMap::Iterate::Continue;
+                return Http::HeaderMap::Iterate::Continue;
             },
             this);
     modsec_transaction_->processRequestHeaders();
@@ -199,7 +202,7 @@ FilterDataStatus HttpModSecurityFilter::decodeData(Buffer::Instance& data, bool 
     return getRequestStatus();
 }
 
-FilterTrailersStatus HttpModSecurityFilter::decodeTrailers(HeaderMap&) {
+FilterTrailersStatus HttpModSecurityFilter::decodeTrailers(Http::RequestTrailerMap&) {
   return FilterTrailersStatus::Continue;
 }
 
@@ -208,7 +211,7 @@ void HttpModSecurityFilter::setDecoderFilterCallbacks(StreamDecoderFilterCallbac
 }
 
 
-FilterHeadersStatus HttpModSecurityFilter::encodeHeaders(HeaderMap& headers, bool end_stream) {
+FilterHeadersStatus HttpModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& headers, bool end_stream) {
     ENVOY_LOG(debug, "HttpModSecurityFilter::encodeHeaders");
     if (intervined_ || response_processed_) {
         ENVOY_LOG(debug, "Processed");
@@ -224,15 +227,15 @@ FilterHeadersStatus HttpModSecurityFilter::encodeHeaders(HeaderMap& headers, boo
         return FilterHeadersStatus::Continue;
     }
 
-    auto status = headers.Status();
-    uint64_t code = Utility::getResponseStatus(headers);
+    auto status = headers.getStatus();
+    uint64_t code = Http::Utility::getResponseStatus(headers);
     headers.iterate(
-            [](const HeaderEntry& header, void* context) -> HeaderMap::Iterate {
+            [](const HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
                 static_cast<HttpModSecurityFilter*>(context)->modsec_transaction_->addResponseHeader(
                     std::string(header.key().getStringView()).c_str(),
                     std::string(header.value().getStringView()).c_str()
                 );
-                return HeaderMap::Iterate::Continue;
+                return Http::HeaderMap::Iterate::Continue;
             },
             this);
     modsec_transaction_->processResponseHeaders(code, 
@@ -244,7 +247,7 @@ FilterHeadersStatus HttpModSecurityFilter::encodeHeaders(HeaderMap& headers, boo
     return getResponseHeadersStatus();
 }
 
-FilterHeadersStatus HttpModSecurityFilter::encode100ContinueHeaders(HeaderMap& headers) {
+FilterHeadersStatus HttpModSecurityFilter::encode100ContinueHeaders(Http::ResponseHeaderMap& headers) {
     return FilterHeadersStatus::Continue;
 }
 
@@ -255,10 +258,7 @@ FilterDataStatus HttpModSecurityFilter::encodeData(Buffer::Instance& data, bool 
         return getResponseStatus();
     }
     
-    uint64_t num_slices = data.getRawSlices(nullptr, 0);
-    absl::FixedArray<Buffer::RawSlice> slices(num_slices);
-    data.getRawSlices(slices.begin(), num_slices);
-    for (const Buffer::RawSlice& slice : slices) {
+    for (const Buffer::RawSlice& slice : data.getRawSlices()) {
         size_t responseLen = modsec_transaction_->getResponseBodyLength();
         // If append fails or append reached the limit, test for intervention (in case SecResponseBodyLimitAction is set to Reject)
         // Note, we can't rely solely on the return value of append, when SecResponseBodyLimitAction is set to Reject it returns true and sets the intervention
@@ -284,12 +284,12 @@ FilterDataStatus HttpModSecurityFilter::encodeData(Buffer::Instance& data, bool 
     return getResponseStatus();
 }
 
-FilterTrailersStatus HttpModSecurityFilter::encodeTrailers(HeaderMap&) {
+FilterTrailersStatus HttpModSecurityFilter::encodeTrailers(Http::RequestTrailerMap&) {
     return FilterTrailersStatus::Continue;
 }
 
 
-FilterMetadataStatus HttpModSecurityFilter::encodeMetadata(MetadataMap& metadata_map) {
+FilterMetadataStatus HttpModSecurityFilter::encodeMetadata(MetadataMapVector& metadata_map) {
     return FilterMetadataStatus::Continue;
 }
 
@@ -322,7 +322,7 @@ FilterHeadersStatus HttpModSecurityFilter::getRequestHeadersStatus() {
     }
     // If disruptive, hold until request_processed_, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSet::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
                 FilterHeadersStatus::StopIteration : 
                 FilterHeadersStatus::Continue;
 }
@@ -338,7 +338,7 @@ FilterDataStatus HttpModSecurityFilter::getRequestStatus() {
     }
     // If disruptive, hold until request_processed_, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSet::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
                 FilterDataStatus::StopIterationAndBuffer : 
                 FilterDataStatus::Continue;
 }
@@ -351,7 +351,7 @@ FilterHeadersStatus HttpModSecurityFilter::getResponseHeadersStatus() {
     }
     // If disruptive, hold until response_processed_, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSet::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
                 FilterHeadersStatus::StopIteration : 
                 FilterHeadersStatus::Continue;
 }
@@ -364,7 +364,7 @@ FilterDataStatus HttpModSecurityFilter::getResponseStatus() {
     }
     // If disruptive, hold until response_processed_, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSet::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
                 FilterDataStatus::StopIterationAndBuffer : 
                 FilterDataStatus::Continue;
 

@@ -82,18 +82,18 @@ public:
   void onDestroy() override;
 
   // Http::StreamDecoderFilter
-  FilterHeadersStatus decodeHeaders(HeaderMap&, bool end_stream) override;
+  FilterHeadersStatus decodeHeaders(Http::RequestHeaderMap&, bool end_stream) override;
   FilterDataStatus decodeData(Buffer::Instance&, bool end_stream) override;
-  FilterTrailersStatus decodeTrailers(HeaderMap&) override;
+  FilterTrailersStatus decodeTrailers(Http::RequestTrailerMap&) override;
   void setDecoderFilterCallbacks(StreamDecoderFilterCallbacks&) override;
 
   // Http::StreamEncoderFilter
-  FilterHeadersStatus encode100ContinueHeaders(HeaderMap& headers) override;
-  FilterHeadersStatus encodeHeaders(HeaderMap&, bool end_stream) override;
+  FilterHeadersStatus encode100ContinueHeaders(Http::ResponseHeaderMap& headers) override;
+  FilterHeadersStatus encodeHeaders(Http::ResponseHeaderMap&, bool end_stream) override;
   FilterDataStatus encodeData(Buffer::Instance&, bool end_stream) override;
-  FilterTrailersStatus encodeTrailers(HeaderMap&) override;
+  FilterTrailersStatus encodeTrailers(Http::RequestTrailerMap&) override;
   void setEncoderFilterCallbacks(StreamEncoderFilterCallbacks&) override;
-  FilterMetadataStatus encodeMetadata(MetadataMap& metadata_map) override;
+  FilterMetadataStatus encodeMetadata(MetadataMapVector& metadata_map) override;
 
 private:
   const HttpModSecurityFilterConfigSharedPtr config_;
