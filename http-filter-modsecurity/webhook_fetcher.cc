@@ -25,7 +25,7 @@ void WebhookFetcher::invoke(const std::string& body) {
     return;
   }
 
-  Http::MessagePtr message = Http::Utility::prepareHeaders(uri_);
+  Http::ResponseMessagePtr message = Http::Utility::prepareHeaders(uri_);
   message->headers().setMethod().value().setReference(Http::Headers::get().MethodValues.Post);
   message->headers().setContentType().value().setReference(Http::Headers::get().ContentTypeValues.Json);
   message->headers().setContentType().value().setInteger(body.size());

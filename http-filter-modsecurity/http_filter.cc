@@ -63,7 +63,7 @@ WebhookFetcherSharedPtr HttpModSecurityFilterConfig::webhook_fetcher() {
     return tls_->getTyped<ThreadLocalWebhook>().webhook_fetcher_;
 }
 
-void HttpModSecurityFilterConfig::onSuccess(const Http::MessagePtr& response) {
+void HttpModSecurityFilterConfig::onSuccess(const Http::ResponseMessagePtr& response) {
     ENVOY_LOG(info, "webhook success!");
 }
 void HttpModSecurityFilterConfig::onFailure(FailureReason reason) {

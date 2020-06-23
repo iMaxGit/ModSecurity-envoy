@@ -33,7 +33,7 @@ public:
   std::shared_ptr<modsecurity::Rules> modsec_rules_;
 
   // Webhook Callbacks
-  void onSuccess(const Http::MessagePtr& response) override;
+  void onSuccess(const Http::ResponseMessagePtr& response) override;
   void onFailure(FailureReason reason) override;
 
 private:

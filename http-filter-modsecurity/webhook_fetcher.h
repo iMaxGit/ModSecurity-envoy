@@ -48,7 +48,7 @@ public:
    * This function will be called when webhook successfully called remote
    * @param data remote data
    */
-  virtual void onSuccess(const Http::MessagePtr& response) PURE;
+  virtual void onSuccess(const Http::ResponseMessagePtr& response) PURE;
 
   /**
    * This function is called when error happens during webhook.
