@@ -80,7 +80,7 @@ public:
   /**
    * Calls the webhook remote URI
    */
-  void invoke(const std::string& body);
+  void fetch(const std::string& body);
 
 private:
   Upstream::ClusterManager& cm_;
