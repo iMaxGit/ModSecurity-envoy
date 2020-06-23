@@ -93,6 +93,8 @@ const char* getProtocolString(const Protocol protocol) {
         return "1.1";
     case Protocol::Http2:
         return "2.0";
+    case Protocol::Http3:
+        return "3.0";
     }
   NOT_REACHED_GCOVR_EXCL_LINE;
 }
