@@ -23,12 +23,12 @@ HttpModSecurityFilterConfig::HttpModSecurityFilterConfig(const modsecurity::Mods
       webhook_(proto_config.webhook()),
       tls_(context.threadLocal().allocateSlot()) {
 
-    modsec_.reset(new modsecurity::ModSecurity());
+    modsec_.reset(new ModSecurity::ModSecurity());
     modsec_->setConnectorInformation("ModSecurity-test v0.0.1-alpha (ModSecurity test)");
-    modsec_->setServerLogCb(HttpModSecurityFilter::_logCb, modsecurity::RuleMessageLogProperty |
-                                                           modsecurity::IncludeFullHighlightLogProperty);
+    modsec_->setServerLogCb(HttpModSecurityFilter::_logCb, ModSecurity::RuleMessageLogProperty |
+                                                           ModSecurity::IncludeFullHighlightLogProperty);
 
-    modsec_rules_.reset(new modsecurity::Rules());
+    modsec_rules_.reset(new ModSecurity::Rules());
     if (!rules_path().empty()) {
         int rulesLoaded = modsec_rules_->loadFromUri(rules_path().c_str());
         ENVOY_LOG(debug, "Loading ModSecurity config from {}", rules_path());
@@ -74,7 +74,7 @@ void HttpModSecurityFilterConfig::onFailure(FailureReason reason) {
 HttpModSecurityFilter::HttpModSecurityFilter(HttpModSecurityFilterConfigSharedPtr config)
     : config_(config), intervined_(false), request_processed_(false), response_processed_(false) {
     
-    modsec_transaction_.reset(new modsecurity::Transaction(config_->modsec_.get(), config_->modsec_rules_.get(), this));
+    modsec_transaction_.reset(new ModSecurity::Transaction(config_->modsec_.get(), config_->modsec_rules_.get(), this));
 }
 
 HttpModSecurityFilter::~HttpModSecurityFilter() {
@@ -325,7 +325,7 @@ FilterHeadersStatus HttpModSecurityFilter::getRequestHeadersStatus() {
     }
     // If disruptive, hold until request_processed_, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::Rules::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == ModSecurity::Rules::EnabledRuleEngine ? 
                 FilterHeadersStatus::StopIteration : 
                 FilterHeadersStatus::Continue;
 }
@@ -341,7 +341,7 @@ FilterDataStatus HttpModSecurityFilter::getRequestStatus() {
     }
     // If disruptive, hold until request_processed_, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::Rules::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == ModSecurity::Rules::EnabledRuleEngine ? 
                 FilterDataStatus::StopIterationAndBuffer : 
                 FilterDataStatus::Continue;
 }
@@ -354,7 +354,7 @@ FilterHeadersStatus HttpModSecurityFilter::getResponseHeadersStatus() {
     }
     // If disruptive, hold until response_processed_, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::Rules::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == ModSecurity::Rules::EnabledRuleEngine ? 
                 FilterHeadersStatus::StopIteration : 
                 FilterHeadersStatus::Continue;
 }
@@ -367,7 +367,7 @@ FilterDataStatus HttpModSecurityFilter::getResponseStatus() {
     }
     // If disruptive, hold until response_processed_, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::Rules::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == ModSecurity::Rules::EnabledRuleEngine ? 
                 FilterDataStatus::StopIterationAndBuffer : 
                 FilterDataStatus::Continue;
 
@@ -375,12 +375,12 @@ FilterDataStatus HttpModSecurityFilter::getResponseStatus() {
 
 void HttpModSecurityFilter::_logCb(void *data, const void *ruleMessagev) {
     auto filter_ = reinterpret_cast<HttpModSecurityFilter*>(data);
-    auto ruleMessage = reinterpret_cast<const modsecurity::RuleMessage *>(ruleMessagev);
+    auto ruleMessage = reinterpret_cast<const ModSecurity::RuleMessage *>(ruleMessagev);
 
     filter_->logCb(ruleMessage);
 }
 
-void HttpModSecurityFilter::logCb(const modsecurity::RuleMessage * ruleMessage) {
+void HttpModSecurityFilter::logCb(const ModSecurity::RuleMessage * ruleMessage) {
     if (ruleMessage == nullptr) {
         ENVOY_LOG(error, "ruleMessage == nullptr");
         return;
@@ -393,7 +393,7 @@ void HttpModSecurityFilter::logCb(const modsecurity::RuleMessage * ruleMessage) 
                     // Note - since ModSecurity >= v3.0.3 disruptive actions do not invoke the callback
                     // see https://github.com/SpiderLabs/ModSecurity/commit/91daeee9f6a61b8eda07a3f77fc64bae7c6b7c36
                     ruleMessage->m_isDisruptive ? "Disruptive" : "Non-disruptive",
-                    modsecurity::RuleMessage::log(ruleMessage));
+                    ModSecurity::RuleMessage::log(ruleMessage));
     config_->webhook_fetcher()->invoke(getRuleMessageAsJsonString(ruleMessage));
 }
 

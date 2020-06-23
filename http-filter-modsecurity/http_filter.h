@@ -29,8 +29,8 @@ public:
 
   WebhookFetcherSharedPtr webhook_fetcher();
 
-  std::shared_ptr<modsecurity::ModSecurity> modsec_;
-  std::shared_ptr<modsecurity::Rules> modsec_rules_;
+  std::shared_ptr<ModSecurity::ModSecurity> modsec_;
+  std::shared_ptr<ModSecurity::Rules> modsec_rules_;
 
   // Webhook Callbacks
   void onSuccess(const Http::ResponseMessagePtr& response) override;
@@ -99,9 +99,9 @@ private:
   const HttpModSecurityFilterConfigSharedPtr config_;
   StreamDecoderFilterCallbacks* decoder_callbacks_;
   StreamEncoderFilterCallbacks* encoder_callbacks_;
-  std::shared_ptr<modsecurity::Transaction> modsec_transaction_;
+  std::shared_ptr<ModSecurity::Transaction> modsec_transaction_;
   
-  void logCb(const modsecurity::RuleMessage * ruleMessage);
+  void logCb(const ModSecurity::RuleMessage * ruleMessage);
   /**
    * @return true if intervention of current transaction is disruptive, false otherwise
    */
