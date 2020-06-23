@@ -12,7 +12,7 @@ namespace Envoy {
 namespace Http {
 
 WebhookFetcher::WebhookFetcher(Upstream::ClusterManager& cm,
-                              const modsecurity::HttpUri& uri, 
+                              const envoy::config::core::v3::HttpUri& uri,
                               const std::string& secret, 
                               WebhookFetcherCallback& callback)
     : cm_(cm), uri_(uri), secret_(secret.cbegin(), secret.cend()), callback_(callback) {}
@@ -24,32 +24,27 @@ void WebhookFetcher::invoke(const std::string& body) {
     ENVOY_LOG(error, "Webhook can't be invoked. cluster '{}' not found", uri_.cluster());
     return;
   }
-  // TODO - this conversion is unnecessary once modsecurity::HttpUri will be deprecated
-  // to redo one day
-  // ::envoy::api::v2::core::HttpUri http_uri;
-  // http_uri.set_uri(uri_.uri());
-  // http_uri.set_cluster(uri_.cluster());
-  // http_uri.set_allocated_timeout(new ::google::protobuf::Duration(uri_.timeout()));
 
-  // Http::MessagePtr message = Http::Utility::prepareHeaders(http_uri);
-  // message->headers().setMethod().value().setReference(Http::Headers::get().MethodValues.Post);
-  // message->headers().setContentType().value().setReference(Http::Headers::get().ContentTypeValues.Json);
-  // message->headers().setContentType().value().setInteger(body.size());
-  // message->body() = std::make_unique<Buffer::OwnedImpl>(body);
-  // if (secret_.size()) {
-  //   // Add digest to headers
-  //   message->headers().addCopy(WebhookHeaders::get().SignatureType, WebhookConstants::get().Sha256Hmac);
-  //   message->headers().addCopy(WebhookHeaders::get().SignatureValue, Hex::encode(Envoy::Common::Crypto::Utility::getSha256Hmac(secret_, body)));
-  // }
+  Http::MessagePtr message = Http::Utility::prepareHeaders(uri_);
+  message->headers().setMethod().value().setReference(Http::Headers::get().MethodValues.Post);
+  message->headers().setContentType().value().setReference(Http::Headers::get().ContentTypeValues.Json);
+  message->headers().setContentType().value().setInteger(body.size());
+  message->body() = std::make_unique<Buffer::OwnedImpl>(body);
+  if (secret_.size()) {
+    // Add digest to headers
+    message->headers().addCopy(WebhookHeaders::get().SignatureType, WebhookConstants::get().Sha256Hmac);
+    message->headers().addCopy(WebhookHeaders::get().SignatureValue, Hex::encode(Envoy::Common::Crypto::Utility::getSha256Hmac(secret_, body)));
+  }
 
-  // ENVOY_LOG(debug, "Webhook [uri = {}]: start", uri_.uri());
-  // cm_.httpAsyncClientForCluster(uri_.cluster())
-  //             .send(std::move(message), *this,
-  //                   Http::AsyncClient::RequestOptions().setTimeout(std::chrono::milliseconds(
-  //                       DurationUtil::durationToMilliseconds(uri_.timeout()))));
+  ENVOY_LOG(debug, "Webhook [uri = {}]: start", uri_.uri());
+  cm_.httpAsyncClientForCluster(uri_.cluster())
+              .send(std::move(message), *this,
+                    Http::AsyncClient::RequestOptions().setTimeout(std::chrono::milliseconds(
+                        DurationUtil::durationToMilliseconds(uri_.timeout()))));
 }
 
-void WebhookFetcher::onSuccess(Http::ResponseMessagePtr&& response) {
+void WebhookFetcher::onSuccess(const Http::AsyncClient::Request& request,
+                               Http::ResponseMessagePtr&& response) {
   const uint64_t status_code = Http::Utility::getResponseStatus(response->headers());
   if (status_code == enumToInt(Http::Code::OK)) {
     ENVOY_LOG(debug, "Webhook [uri = {}]: success", uri_.uri());
@@ -62,7 +57,8 @@ void WebhookFetcher::onSuccess(Http::ResponseMessagePtr&& response) {
 
 }
 
-void WebhookFetcher::onFailure(Http::AsyncClient::FailureReason reason) {
+void WebhookFetcher::onFailure(const Http::AsyncClient::Request&,
+                               Http::AsyncClient::FailureReason reason) {
   ENVOY_LOG(debug, "Webhook [uri = {}]: network error {}", uri_.uri(), enumToInt(reason));
   callback_.onFailure(FailureReason::Network);
 }
