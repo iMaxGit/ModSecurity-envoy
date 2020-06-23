@@ -33,7 +33,7 @@ std::string getRuleMessageAsJsonString(const modsecurity::RuleMessage* ruleMessa
     for (const auto& tag : ruleMessage->m_tags) {
         tag_array.push_back(ValueUtil::stringValue(tag));
     }
-    (*document_fields)["tags"] = tag_array;
+    (*document_fields)["tags"] = ValueUtil::listValue(tag_array);
     return MessageUtil::getJsonStringFromMessage(document);
 }
 
