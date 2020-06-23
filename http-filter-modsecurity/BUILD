@@ -17,13 +17,13 @@ api_proto_package(
 
 envoy_cc_library(
     name = "http_filter_lib",
-    copts=["-Wno-unused-function", "-Wno-unused-parameter", "-Wno-reorder", "-Wno-unused-variable", "-Imodsecurity/include"],
+    copts=["-Wno-unused-function", "-Wno-unused-parameter", "-Wno-reorder", "-Wno-unused-variable"],
     srcs = ["utility.cc", "http_filter.cc", "webhook_fetcher.cc"],
     hdrs = glob(["utility.h", "http_filter.h", "webhook_fetcher.h", "well_known_names.h", "json_utils.h"]),
     repository = "@envoy",
     deps = [
         ":pkg_cc_proto",
-        "//:libmodsecurity",
+        "@modsecurity//:lib",
         "@envoy//source/exe:envoy_common_lib",
     ],
 )
@@ -31,7 +31,7 @@ envoy_cc_library(
 envoy_cc_library(
     name = "http_filter_config",
     srcs = ["http_filter_config.cc"],
-    copts=["-Wno-unused-function", "-Wno-unused-parameter", "-Wno-reorder", "-Wno-unused-variable", "-Imodsecurity/include"],
+    copts=["-Wno-unused-function", "-Wno-unused-parameter", "-Wno-reorder", "-Wno-unused-variable"],
     repository = "@envoy",
     deps = [
         ":http_filter_lib",

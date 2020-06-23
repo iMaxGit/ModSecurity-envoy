@@ -1,5 +1,4 @@
 #include "utility.h"
-#include "modsecurity/rule_message.h"
 #include "common/protobuf/protobuf.h"
 #include "common/protobuf/utility.h"
 

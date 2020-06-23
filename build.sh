@@ -43,6 +43,16 @@ local_repository(
     name = "envoy",
     path = "envoy",
 )
+
+http_archive(
+    name = "bazel_pkg_config",
+    strip_prefix = "bazel_pkg_config-master",
+    urls = ["https://github.com/cherrry/bazel_pkg_config/archive/master.zip"],
+)
+
+load("@bazel_pkg_config//:pkg_config.bzl", "pkg_config")
+
+pkg_config( name = "modsecurity" )
 EOL
         # patch envoy workspace
         cat envoy/WORKSPACE | sed -e '1d' | sed -e 's|//bazel|@envoy//bazel|g' >> WORKSPACE

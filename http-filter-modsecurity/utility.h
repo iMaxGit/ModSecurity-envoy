@@ -3,7 +3,7 @@
 #include <string>
 
 #include "modsecurity/modsecurity.h"
-#include "modsecurity/rules.h"
+#include "modsecurity/rule_message.h"
 
 namespace Envoy {
 namespace Http {
