@@ -21,6 +21,4 @@ envoy_cc_binary(
         "//http-filter-modsecurity:http_filter_config",
         "@envoy//source/exe:envoy_main_entry_lib",
     ],
-    # Note - this really adds those as dynamic dependencies, this forces our docker image to have these libraries installed
-    linkopts = ["-lyajl", "-ldl", "-lrt", "-lpcre", "-lcurl", "-lxml2", "-lGeoIP"]
 )
