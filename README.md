@@ -47,7 +47,7 @@ sudo apt-get install -y g++ flex bison curl doxygen libyajl-dev libgeoip-dev lib
 
 To build run
 ```bash
-bazel build //:envoy
+./build build
 ```
 
 For more information on envoy's building system read Envoy's [documentation](https://github.com/envoyproxy/envoy).
