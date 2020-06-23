@@ -17,7 +17,7 @@ std::string escapeJson(const std::string& s);
  * Converts a RuleMessage to json 
  * @return A json string
  */
-std::string getRuleMessageAsJsonString(const ModSecurity::RuleMessage* ruleMessage);
+std::string getRuleMessageAsJsonString(const modsecurity::RuleMessage* ruleMessage);
 
 } // Http
 } // Envoy

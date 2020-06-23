@@ -6,7 +6,7 @@
 namespace Envoy {
 namespace Http {
 
-std::string getRuleMessageAsJsonString(const ModSecurity::RuleMessage* ruleMessage) {
+std::string getRuleMessageAsJsonString(const modsecurity::RuleMessage* ruleMessage) {
     ProtobufWkt::Struct document;
     auto* document_fields = document.mutable_fields();
     (*document_fields)["accuracy"] = ValueUtil::numberValue(ruleMessage->m_accuracy);
