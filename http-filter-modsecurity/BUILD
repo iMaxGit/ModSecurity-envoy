@@ -15,24 +15,25 @@ api_proto_package(
 )
 
 envoy_cc_library(
+    name = "webhook_fetch_lib",
+    srcs = ["webhook_fetcher.cc"],
+    hdrs = ["webhook_fetcher.h"],
+    repository = "@envoy",
+    deps = [
+        "@envoy_api//envoy/config/core/v3:pkg",
+        "@envoy//source/exe:envoy_common_lib",
+    ],
+)
+
+envoy_cc_library(
     name = "modsecurity_filter_lib",
     srcs = ["modsecurity_filter.cc", "utility.cc"],
     hdrs = ["modsecurity_filter.h", "utility.h", "webhook_fetcher.h"],
     repository = "@envoy",
     deps = [
         ":pkg_cc_proto",
+        ":webhook_fetch_lib",
         "@modsecurity//:lib",
-        "@envoy//source/exe:envoy_common_lib",
-    ],
-)
-
-envoy_cc_library(
-    name = "webhook_fetch_lib",
-    srcs = ["webhook_fetcher.cc"],
-    hdrs = ["webhook_fetcher.h"],
-    repository = "@envoy",
-    deps = [
-        ":pkg_cc_proto",
         "@envoy//source/exe:envoy_common_lib",
     ],
 )
@@ -44,7 +45,6 @@ envoy_cc_library(
     repository = "@envoy",
     deps = [
         ":modsecurity_filter_lib",
-        ":webhook_fetch_lib",
         "@envoy//include/envoy/registry",
         "@envoy//source/common/protobuf:utility_lib",
         "@envoy//include/envoy/network:filter_interface",
