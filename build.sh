@@ -20,6 +20,11 @@ case $1 in
         git checkout $2
         ;;
     build )
+
+        if [ -d /usr/local/modsecurity/lib/pkgconfig ]; then
+            export PKG_CONFIG_PATH="/usr/local/modsecurity/lib/pkgconfig:$PKG_CONFIG_PATH"
+        fi
+
         if ! pkg-config modsecurity --exists; then
             echo "Not found ModSecurity"
             exit 1
