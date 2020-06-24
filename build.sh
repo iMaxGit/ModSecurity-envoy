@@ -71,7 +71,7 @@ case $1 in
         check_modsecurity
 
         # show version to build
-        echo "Test with envoy ${$0 version}"
+        echo "Test with envoy $($0 version)"
 
         gen_workspace
 
@@ -83,7 +83,7 @@ case $1 in
         check_modsecurity
 
         # show version to build
-        echo "Build with envoy ${$0 version}"
+        echo "Build with envoy $($0 version)"
 
         gen_workspace
 
