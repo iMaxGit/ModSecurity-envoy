@@ -21,14 +21,22 @@ local_repository(
     path = "envoy",
 )
 
-local_repository(
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
     name = "bazel_pkg_config",
-    path = "tools/bazel_pkg_config",
+    strip_prefix = "bazel_pkg_config-master",
+    urls = ["https://github.com/cherrry/bazel_pkg_config/archive/master.zip"],
 )
 
 load("@bazel_pkg_config//:pkg_config.bzl", "pkg_config")
 
-pkg_config( name = "modsecurity" )
+pkg_config(
+    name = "modsecurity",
+    ignore_opts = [
+        "-lmodsecurity"
+    ]
+)
 EOL
     # patch envoy workspace
     cat envoy/WORKSPACE | sed -e '1d' | sed -e 's|//bazel|@envoy//bazel|g' >> WORKSPACE
