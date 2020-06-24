@@ -17,7 +17,7 @@ api_proto_package(
 envoy_cc_library(
     name = "modsecurity_filter_lib",
     srcs = ["modsecurity_filter.cc", "utility.cc"],
-    hdrs = ["modsecurity_filter.h", "utility.h", "well_known_names.h"],
+    hdrs = ["modsecurity_filter.h", "utility.h", "well_known_names.h", "webhook_fetcher.h"],
     repository = "@envoy",
     deps = [
         ":pkg_cc_proto",
@@ -40,6 +40,7 @@ envoy_cc_library(
 envoy_cc_library(
     name = "modsecurity_filter_config",
     srcs = ["modsecurity_config.cc"],
+    hdrs = ["json_utils.h"],
     repository = "@envoy",
     deps = [
         ":modsecurity_filter_lib",
