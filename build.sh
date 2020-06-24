@@ -84,7 +84,9 @@ case $1 in
         gen_workspace
 
         bazel test //:envoy_binary_test || exit 1
-        bazel test //http-filter-example:http_filter_integration_test || exit 1
+        bazel test //http-filter-modsecurity:modsecurity_filter_integration_test || exit 1
+
+        echo "Done!"
         ;;
     build )
 
@@ -101,14 +103,23 @@ case $1 in
 
         echo "Done!"
         ;;
+    install )
+        if [ ! -f bazel-bin/envoy ]; then
+            $0 build || exit 1
+        fi
+        install -m 755 -s bazel-bin/envoy /usr/local/bin/envoy
+        echo "Done!"
+        ;;
     help|*)
         echo "$0 <command [args...]>"
         echo
         echo "Commands:"
-        echo "    list-versions      List online envoy versions"
+        echo "    list-versions      List online envoy versions (git)"
         echo "    version            Get current envoy version"
-        echo "    set-version <ver>  Set envoy version"
+        echo "    set-version <ver>  Set envoy version (git)"
         echo "    build              Start build"
+        echo "    test               Start test"
+        echo "    install            Install envoy to system path"
         echo "    help               This message"
         ;;
 esac
