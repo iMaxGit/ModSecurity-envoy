@@ -27,7 +27,7 @@ namespace Http {
  */
 
 // constructor
-ModSecurityFilterConfig::ModSecurityFilterConfig(const http::filter::modsecurity::ModsecurityFilterConfigDecoder& proto_config,
+ModSecurityFilterConfig::ModSecurityFilterConfig(const http::filter::modsecurity::FilterConfig& proto_config,
                                                  Server::Configuration::FactoryContext& context)
     : rules_path_(proto_config.rules_path()),
       rules_inline_(proto_config.rules_inline()),
@@ -77,12 +77,12 @@ WebhookFetcherSharedPtr ModSecurityFilterConfig::webhook_fetcher() {
 }
 
 // on success
-void ModSecurityFilterConfig::onSuccess(const Http::ResponseMessagePtr& response) {
+void ModSecurityFilterConfig::onSuccess(const Http::ResponseMessagePtr&) {
     ENVOY_LOG(info, "webhook success!");
 }
 
 // on fail
-void ModSecurityFilterConfig::onFailure(FailureReason reason) {
+void ModSecurityFilterConfig::onFailure(FailureReason) {
     ENVOY_LOG(info, "webhook failure!");
 }
 
@@ -228,7 +228,7 @@ void ModSecurityFilter::setDecoderFilterCallbacks(StreamDecoderFilterCallbacks& 
 }
 
 
-FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& headers, bool end_stream) {
+FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& headers, bool) {
     ENVOY_LOG(debug, "ModSecurityFilter::encodeHeaders");
     if (status_.intervined || status_.response_processed) {
         ENVOY_LOG(debug, "Processed");
@@ -263,11 +263,11 @@ FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& he
     return getResponseHeadersStatus();
 }
 
-FilterHeadersStatus ModSecurityFilter::encode100ContinueHeaders(Http::ResponseHeaderMap& headers) {
+FilterHeadersStatus ModSecurityFilter::encode100ContinueHeaders(Http::ResponseHeaderMap&) {
     return FilterHeadersStatus::Continue;
 }
 
-FilterDataStatus ModSecurityFilter::encodeData(Buffer::Instance& data, bool end_stream) {
+FilterDataStatus ModSecurityFilter::encodeData(Buffer::Instance& data, bool) {
     ENVOY_LOG(debug, "ModSecurityFilter::encodeData");
     if (status_.intervined || status_.response_processed) {
         ENVOY_LOG(debug, "Processed");
@@ -305,7 +305,7 @@ FilterTrailersStatus ModSecurityFilter::encodeTrailers(Http::ResponseTrailerMap&
 }
 
 
-FilterMetadataStatus ModSecurityFilter::encodeMetadata(MetadataMap& metadata_map) {
+FilterMetadataStatus ModSecurityFilter::encodeMetadata(MetadataMap&) {
     return FilterMetadataStatus::Continue;
 }
 
