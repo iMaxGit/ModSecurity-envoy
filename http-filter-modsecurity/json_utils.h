@@ -60,3 +60,4 @@
           Protobuf::util::TimeUtil::MillisecondsToDuration((json).getInteger(#src_field "_ms")));  \
     }                                                                                              \
   } while (0)
+
