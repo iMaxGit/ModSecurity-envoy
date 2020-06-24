@@ -267,7 +267,7 @@ FilterHeadersStatus ModSecurityFilter::encode100ContinueHeaders(Http::ResponseHe
     return FilterHeadersStatus::Continue;
 }
 
-FilterDataStatus ModSecurityFilter::encodeData(Buffer::Instance& data, bool) {
+FilterDataStatus ModSecurityFilter::encodeData(Buffer::Instance& data, bool end_stream) {
     ENVOY_LOG(debug, "ModSecurityFilter::encodeData");
     if (status_.intervined || status_.response_processed) {
         ENVOY_LOG(debug, "Processed");
@@ -318,10 +318,9 @@ bool ModSecurityFilter::intervention() {
         // status_.intervined must be set to true before sendLocalReply to avoid reentrancy when encoding the reply
         status_.intervined = true;
         ENVOY_LOG(debug, "intervention");
-        decoder_callbacks_->sendLocalReply(static_cast<Http::Code>(modsec_transaction_->m_it.status), 
+        decoder_callbacks_->sendLocalReply(static_cast<Http::Code>(modsec_transaction_->m_it.status),
                                            "ModSecurity Action\n",
-                                           [](Http::HeaderMap& headers) {
-                                           }, absl::nullopt, "");
+                                           [](Http::HeaderMap&) {}, absl::nullopt, "");
     }
     return status_.intervined;
 }
@@ -386,14 +385,14 @@ FilterDataStatus ModSecurityFilter::getResponseStatus() {
 
 }
 
-void ModSecurityFilter::_logCb(void *data, const void *ruleMessagev) {
+void ModSecurityFilter::_logCb(void *data, const void *ruleMessage) {
     auto filter_ = reinterpret_cast<ModSecurityFilter*>(data);
-    auto ruleMessage = reinterpret_cast<const modsecurity::RuleMessage *>(ruleMessagev);
+    auto ruleMessage = reinterpret_cast<const modsecurity::RuleMessage*>(ruleMessage);
 
     filter_->logCb(ruleMessage);
 }
 
-void ModSecurityFilter::logCb(const modsecurity::RuleMessage * ruleMessage) {
+void ModSecurityFilter::logCb(const modsecurity::RuleMessage* ruleMessage) {
     if (ruleMessage == nullptr) {
         ENVOY_LOG(error, "ruleMessage == nullptr");
         return;
