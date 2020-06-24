@@ -21,7 +21,8 @@ public:
                                                      FactoryContext& context) override {
 
     return createFilter(
-        Envoy::MessageUtil::downcastAndValidate<const http::filter::modsecurity::FilterConfig&>(proto_config, context.messageValidationVisitor()), context);
+      Envoy::MessageUtil::downcastAndValidate<const http::filter::modsecurity::FilterConfig&>(proto_config, context.messageValidationVisitor()),
+      context);
   }
 
   /**
@@ -45,20 +46,9 @@ private:
       callbacks.addStreamFilter(Http::StreamFilterSharedPtr{filter});
     };
   }
-
-  void translateModSecurityFilter(const Json::Object& json_config,
-                                  http::filter::modsecurity::FilterConfig& proto_config) {
-    // normally we want to validate the json_config againts a defined json-schema here.
-    JSON_UTIL_SET_STRING(json_config, proto_config, rules_path);
-    JSON_UTIL_SET_STRING(json_config, proto_config, rules_inline);
-  }
 };
 
-/**
- * Static registration for this sample filter. @see RegisterFactory.
- */
-static Registry::RegisterFactory<ModSecurityFilterConfigFactory, NamedHttpFilterConfigFactory>
-    register_;
+REGISTER_FACTORY(ModSecurityFilterConfigFactory, NamedHttpFilterConfigFactory);
 
 } // namespace Configuration
 } // namespace Server
