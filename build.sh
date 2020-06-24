@@ -45,6 +45,11 @@ local_repository(
     path = "envoy",
 )
 
+local_repository(
+    name = "bazel_pkg_config",
+    path = "tools/bazel_pkg_config",
+)
+
 load("@bazel_pkg_config//:pkg_config.bzl", "pkg_config")
 
 pkg_config( name = "modsecurity" )
