@@ -31,8 +31,8 @@ public:
     return ProtobufTypes::MessagePtr{new http::filter::modsecurity::FilterConfig()};
   }
 
-  std::string name() const override { 
-    return Envoy::Http::ModSecurityFilterNames::get().ModSecurity;
+  std::string name() const override {
+    return MOD_SECURITY_FILTER_NAME;
   }
 
 private:
