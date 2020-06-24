@@ -1,23 +1,37 @@
 #!/bin/bash
 
 if [ ! -f envoy/VERSION ]; then
-    echo "Downloading submodule"
-    git suubmoduule update --init
-    echo "Done"
+    if [ -d .git ]; then
+        echo "Downloading submodule"
+        git suubmoduule update --init
+        echo "Done"
+    else
+        echo "Please download envoy source"
+        exit 1
+    fi
 fi
 
 case $1 in
     list-versions )
         cd envoy
-        git ls-remote --tags 2> /dev/null | grep -o "refs/tags/.*" | sort -rV | grep -o '[^\/]*$'
+        if [ -d .git ]; then
+            git ls-remote --tags 2> /dev/null | grep -o "refs/tags/.*" | sort -rV | grep -o '[^\/]*$'
+        else
+            echo "Not clone from git"
+            exit 1
+        fi
         ;;
     version )
-        cd envoy
-        git describe --tags
+        echo "v$(cat envoy/VERSION)"
         ;;
     set-version )
         cd envoy
-        git checkout $2
+        if [ -d .git ]; then
+            git checkout $2
+        else
+            echo "Not clone from git"
+            exit 1
+        fi
         ;;
     build )
 
