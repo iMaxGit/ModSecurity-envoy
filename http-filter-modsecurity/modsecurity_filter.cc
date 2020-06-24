@@ -387,9 +387,8 @@ FilterDataStatus ModSecurityFilter::getResponseStatus() {
 
 void ModSecurityFilter::_logCb(void *data, const void *ruleMessage) {
     auto filter_ = reinterpret_cast<ModSecurityFilter*>(data);
-    auto ruleMessage = reinterpret_cast<const modsecurity::RuleMessage*>(ruleMessage);
 
-    filter_->logCb(ruleMessage);
+    filter_->logCb(reinterpret_cast<const modsecurity::RuleMessage*>(ruleMessage));
 }
 
 void ModSecurityFilter::logCb(const modsecurity::RuleMessage* ruleMessage) {
