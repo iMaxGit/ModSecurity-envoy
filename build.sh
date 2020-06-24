@@ -1,5 +1,39 @@
 #!/bin/bash
 
+function check_modsecurity() {
+    if [ -d /usr/local/modsecurity/lib/pkgconfig ]; then
+        export PKG_CONFIG_PATH="/usr/local/modsecurity/lib/pkgconfig:$PKG_CONFIG_PATH"
+        export LD_LIBRARY_PATH="/usr/local/modsecurity/lib:$LD_LIBRARY_PATH"
+    fi
+
+    if ! pkg-config modsecurity --exists; then
+        echo "Not found ModSecurity"
+        exit 1
+    fi
+}
+
+function gen_workspace() {
+    cat <<EOL > WORKSPACE
+workspace(name = "envoy_filter_modsecurity")
+
+local_repository(
+    name = "envoy",
+    path = "envoy",
+)
+
+local_repository(
+    name = "bazel_pkg_config",
+    path = "tools/bazel_pkg_config",
+)
+
+load("@bazel_pkg_config//:pkg_config.bzl", "pkg_config")
+
+pkg_config( name = "modsecurity" )
+EOL
+    # patch envoy workspace
+    cat envoy/WORKSPACE | sed -e '1d' | sed -e 's|//bazel|@envoy//bazel|g' >> WORKSPACE
+}
+
 if [ ! -f envoy/VERSION ]; then
     if [ -d .git ]; then
         echo "Downloading submodule"
@@ -33,46 +67,31 @@ case $1 in
             exit 1
         fi
         ;;
-    build )
-
-        if [ -d /usr/local/modsecurity/lib/pkgconfig ]; then
-            export PKG_CONFIG_PATH="/usr/local/modsecurity/lib/pkgconfig:$PKG_CONFIG_PATH"
-            export LD_LIBRARY_PATH="/usr/local/modsecurity/lib:$LD_LIBRARY_PATH"
-        fi
-
-        if ! pkg-config modsecurity --exists; then
-            echo "Not found ModSecurity"
-            exit 1
-        fi
+    test )
+        check_modsecurity
 
         # show version to build
-        ENVOY_VER=$(cat envoy/VERSION)
-        echo "Build with envoy v${ENVOY_VER}"
+        echo "Test with envoy ${$0 version}"
 
-        # generate workspace
-        echo "Write workspace file"
-        cat <<EOL > WORKSPACE
-workspace(name = "envoy_filter_modsecurity")
+        gen_workspace
 
-local_repository(
-    name = "envoy",
-    path = "envoy",
-)
+        bazel test //:envoy_binary_test || exit 1
+        bazel test //http-filter-example:http_filter_integration_test || exit 1
+        ;;
+    build )
 
-local_repository(
-    name = "bazel_pkg_config",
-    path = "tools/bazel_pkg_config",
-)
+        check_modsecurity
 
-load("@bazel_pkg_config//:pkg_config.bzl", "pkg_config")
+        # show version to build
+        echo "Build with envoy ${$0 version}"
 
-pkg_config( name = "modsecurity" )
-EOL
-        # patch envoy workspace
-        cat envoy/WORKSPACE | sed -e '1d' | sed -e 's|//bazel|@envoy//bazel|g' >> WORKSPACE
+        gen_workspace
 
         echo "Start build"
-        bazel build //:envoy
+
+        bazel build //:envoy || exit 1
+
+        echo "Done!"
         ;;
     help|*)
         echo "$0 <command [args...]>"
