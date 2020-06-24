@@ -2,7 +2,9 @@
 #include <vector>
 #include <iostream>
 
-#include "http_filter.h"
+#include "modsecurity_filter.h"
+#include "envoy/server/filter_config.h"
+
 #include "utility.h"
 
 #include "absl/container/fixed_array.h"
@@ -20,17 +22,22 @@
 namespace Envoy {
 namespace Http {
 
-HttpModSecurityFilterConfig::HttpModSecurityFilterConfig(const envoy::config::filter::http::modsecurity::ModsecurityFilterConfigDecoder& proto_config,
-                                                         Server::Configuration::FactoryContext& context)
+/* 
+ *  Filter Config
+ */
+
+// constructor
+ModSecurityFilterConfig::ModSecurityFilterConfig(const modsecurity_filter::ModsecurityFilterConfigDecoder& proto_config,
+                                                 Server::Configuration::FactoryContext& context)
     : rules_path_(proto_config.rules_path()),
       rules_inline_(proto_config.rules_inline()),
       webhook_(proto_config.webhook()),
       tls_(context.threadLocal().allocateSlot()) {
 
     modsec_.reset(new modsecurity::ModSecurity());
-    modsec_->setConnectorInformation("ModSecurity-test v0.0.1-alpha (ModSecurity test)");
-    modsec_->setServerLogCb(HttpModSecurityFilter::_logCb, modsecurity::RuleMessageLogProperty |
-                                                           modsecurity::IncludeFullHighlightLogProperty);
+    modsec_->setConnectorInformation("ModSecurity-envoy v0.1.0 (ModSecurity)");
+    modsec_->setServerLogCb(ModSecurityFilter::_logCb,
+                            modsecurity::RuleMessageLogProperty | modsecurity::IncludeFullHighlightLogProperty);
 
     modsec_rules_.reset(new modsecurity::RulesSet());
     if (!rules_path().empty()) {
@@ -60,32 +67,41 @@ HttpModSecurityFilterConfig::HttpModSecurityFilterConfig(const envoy::config::fi
     });
 }
 
-HttpModSecurityFilterConfig::~HttpModSecurityFilterConfig() {
+// destructor
+ModSecurityFilterConfig::~ModSecurityFilterConfig() {
 }
 
-WebhookFetcherSharedPtr HttpModSecurityFilterConfig::webhook_fetcher() {
+// webhook
+WebhookFetcherSharedPtr ModSecurityFilterConfig::webhook_fetcher() {
     return tls_->getTyped<ThreadLocalWebhook>().webhook_fetcher_;
 }
 
-void HttpModSecurityFilterConfig::onSuccess(const Http::ResponseMessagePtr& response) {
+// on success
+void ModSecurityFilterConfig::onSuccess(const Http::ResponseMessagePtr& response) {
     ENVOY_LOG(info, "webhook success!");
 }
-void HttpModSecurityFilterConfig::onFailure(FailureReason reason) {
+
+// on fail
+void ModSecurityFilterConfig::onFailure(FailureReason reason) {
     ENVOY_LOG(info, "webhook failure!");
 }
 
+/* 
+ *  Filter
+ */
 
-HttpModSecurityFilter::HttpModSecurityFilter(HttpModSecurityFilterConfigSharedPtr config)
-    : config_(config), intervined_(false), request_processed_(false), response_processed_(false) {
+// constructor
+ModSecurityFilter::ModSecurityFilter(ModSecurityFilterConfigSharedPtr config)
+    : config_(config) {
     
     modsec_transaction_.reset(new modsecurity::Transaction(config_->modsec_.get(), config_->modsec_rules_.get(), this));
 }
 
-HttpModSecurityFilter::~HttpModSecurityFilter() {
+// destructor
+ModSecurityFilter::~ModSecurityFilter() {
 }
 
-
-void HttpModSecurityFilter::onDestroy() {
+void ModSecurityFilter::onDestroy() {
     modsec_transaction_->processLogging();
 }
 
@@ -100,22 +116,22 @@ const char* getProtocolString(const Protocol protocol) {
     case Protocol::Http3:
         return "3.0";
     }
-  NOT_REACHED_GCOVR_EXCL_LINE;
+    NOT_REACHED_GCOVR_EXCL_LINE;
 }
 
-FilterHeadersStatus HttpModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& headers, bool end_stream) {
-    ENVOY_LOG(debug, "HttpModSecurityFilter::decodeHeaders");
-    if (intervined_ || request_processed_) {
+FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& headers, bool end_stream) {
+    ENVOY_LOG(debug, "ModSecurityFilter::decodeHeaders");
+    if (status_.intervined || status_.request_processed) {
         ENVOY_LOG(debug, "Processed");
         return getRequestHeadersStatus();
     }
     const auto filter_meta =
         decoder_callbacks_->route()->routeEntry()->metadata().filter_metadata().at(ModSecurityMetadataFilter::get().ModSecurity);
-    const auto& disable =  filter_meta.fields().at(MetadataModSecurityKey::get().Disable);
-    const auto& disable_request =  filter_meta.fields().at(MetadataModSecurityKey::get().DisableRequest);
+    const auto& disable =  filter_meta.fields().at("disable");
+    const auto& disable_request =  filter_meta.fields().at("disable_request");
     if (disable_request.bool_value() || disable.bool_value()) {
         ENVOY_LOG(debug, "Filter disabled");
-        request_processed_ = true;
+        status_.request_processed = true;
         return FilterHeadersStatus::Continue;
     }
     
@@ -150,19 +166,19 @@ FilterHeadersStatus HttpModSecurityFilter::decodeHeaders(Http::RequestHeaderMap&
                 
                 std::string k = std::string(header.key().getStringView());
                 std::string v = std::string(header.value().getStringView());
-                static_cast<HttpModSecurityFilter*>(context)->modsec_transaction_->addRequestHeader(k.c_str(), v.c_str());
+                static_cast<ModSecurityFilter*>(context)->modsec_transaction_->addRequestHeader(k.c_str(), v.c_str());
                 // TODO - does this special case makes sense? it doesn't exist on apache/nginx modsecurity bridges.
                 // host header is cannonized to :authority even on http older than 2 
                 // see https://github.com/envoyproxy/envoy/issues/2209
                 if (k == Headers::get().Host.get()) {
-                    static_cast<HttpModSecurityFilter*>(context)->modsec_transaction_->addRequestHeader(Headers::get().HostLegacy.get().c_str(), v.c_str());
+                    static_cast<ModSecurityFilter*>(context)->modsec_transaction_->addRequestHeader(Headers::get().HostLegacy.get().c_str(), v.c_str());
                 }
                 return Http::HeaderMap::Iterate::Continue;
             },
             this);
     modsec_transaction_->processRequestHeaders();
     if (end_stream) {
-        request_processed_ = true;
+        status_.request_processed = true;
     }
     if (intervention()) {
         return FilterHeadersStatus::StopIteration;
@@ -170,9 +186,9 @@ FilterHeadersStatus HttpModSecurityFilter::decodeHeaders(Http::RequestHeaderMap&
     return getRequestHeadersStatus();
 }
 
-FilterDataStatus HttpModSecurityFilter::decodeData(Buffer::Instance& data, bool end_stream) {
-    ENVOY_LOG(debug, "HttpModSecurityFilter::decodeData");
-    if (intervined_ || request_processed_) {
+FilterDataStatus ModSecurityFilter::decodeData(Buffer::Instance& data, bool end_stream) {
+    ENVOY_LOG(debug, "ModSecurityFilter::decodeData");
+    if (status_.intervined || status_.request_processed) {
         ENVOY_LOG(debug, "Processed");
         return getRequestStatus();
     }
@@ -183,7 +199,7 @@ FilterDataStatus HttpModSecurityFilter::decodeData(Buffer::Instance& data, bool 
         // Note, we can't rely solely on the return value of append, when SecRequestBodyLimitAction is set to Reject it returns true and sets the intervention
         if (modsec_transaction_->appendRequestBody(static_cast<unsigned char*>(slice.mem_), slice.len_) == false ||
             (slice.len_ > 0 && requestLen == modsec_transaction_->getRequestBodyLength())) {
-            ENVOY_LOG(debug, "HttpModSecurityFilter::decodeData appendRequestBody reached limit");
+            ENVOY_LOG(debug, "ModSecurityFilter::decodeData appendRequestBody reached limit");
             if (intervention()) {
                 return FilterDataStatus::StopIterationNoBuffer;
             }
@@ -194,7 +210,7 @@ FilterDataStatus HttpModSecurityFilter::decodeData(Buffer::Instance& data, bool 
     }
 
     if (end_stream) {
-        request_processed_ = true;
+        status_.request_processed = true;
         modsec_transaction_->processRequestBody();
     }
     if (intervention()) {
@@ -203,35 +219,35 @@ FilterDataStatus HttpModSecurityFilter::decodeData(Buffer::Instance& data, bool 
     return getRequestStatus();
 }
 
-FilterTrailersStatus HttpModSecurityFilter::decodeTrailers(Http::RequestTrailerMap&) {
+FilterTrailersStatus ModSecurityFilter::decodeTrailers(Http::RequestTrailerMap&) {
   return FilterTrailersStatus::Continue;
 }
 
-void HttpModSecurityFilter::setDecoderFilterCallbacks(StreamDecoderFilterCallbacks& callbacks) {
+void ModSecurityFilter::setDecoderFilterCallbacks(StreamDecoderFilterCallbacks& callbacks) {
   decoder_callbacks_ = &callbacks;
 }
 
 
-FilterHeadersStatus HttpModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& headers, bool end_stream) {
-    ENVOY_LOG(debug, "HttpModSecurityFilter::encodeHeaders");
-    if (intervined_ || response_processed_) {
+FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& headers, bool end_stream) {
+    ENVOY_LOG(debug, "ModSecurityFilter::encodeHeaders");
+    if (status_.intervined || status_.response_processed) {
         ENVOY_LOG(debug, "Processed");
         return getResponseHeadersStatus();
     }
     const auto filter_meta =
         encoder_callbacks_->route()->routeEntry()->metadata().filter_metadata().at(ModSecurityMetadataFilter::get().ModSecurity);
-    const auto& disable =  filter_meta.fields().at(MetadataModSecurityKey::get().Disable);
-    const auto& disable_response =  filter_meta.fields().at(MetadataModSecurityKey::get().DisableResponse);
+    const auto& disable =  filter_meta.fields().at("disable");
+    const auto& disable_response =  filter_meta.fields().at("disable_response");
     if (disable.bool_value() || disable_response.bool_value()) {
         ENVOY_LOG(debug, "Filter disabled");
-        response_processed_ = true;
+        status_.response_processed = true;
         return FilterHeadersStatus::Continue;
     }
 
     uint64_t response_code = Http::Utility::getResponseStatus(headers);
     headers.iterate(
             [](const HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
-                static_cast<HttpModSecurityFilter*>(context)->modsec_transaction_->addResponseHeader(
+                static_cast<ModSecurityFilter*>(context)->modsec_transaction_->addResponseHeader(
                     std::string(header.key().getStringView()).c_str(),
                     std::string(header.value().getStringView()).c_str()
                 );
@@ -247,13 +263,13 @@ FilterHeadersStatus HttpModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap
     return getResponseHeadersStatus();
 }
 
-FilterHeadersStatus HttpModSecurityFilter::encode100ContinueHeaders(Http::ResponseHeaderMap& headers) {
+FilterHeadersStatus ModSecurityFilter::encode100ContinueHeaders(Http::ResponseHeaderMap& headers) {
     return FilterHeadersStatus::Continue;
 }
 
-FilterDataStatus HttpModSecurityFilter::encodeData(Buffer::Instance& data, bool end_stream) {
-    ENVOY_LOG(debug, "HttpModSecurityFilter::encodeData");
-    if (intervined_ || response_processed_) {
+FilterDataStatus ModSecurityFilter::encodeData(Buffer::Instance& data, bool end_stream) {
+    ENVOY_LOG(debug, "ModSecurityFilter::encodeData");
+    if (status_.intervined || status_.response_processed) {
         ENVOY_LOG(debug, "Processed");
         return getResponseStatus();
     }
@@ -264,7 +280,7 @@ FilterDataStatus HttpModSecurityFilter::encodeData(Buffer::Instance& data, bool 
         // Note, we can't rely solely on the return value of append, when SecResponseBodyLimitAction is set to Reject it returns true and sets the intervention
         if (modsec_transaction_->appendResponseBody(static_cast<unsigned char*>(slice.mem_), slice.len_) == false ||
             (slice.len_ > 0 && responseLen == modsec_transaction_->getResponseBodyLength())) {
-            ENVOY_LOG(debug, "HttpModSecurityFilter::encodeData appendResponseBody reached limit");
+            ENVOY_LOG(debug, "ModSecurityFilter::encodeData appendResponseBody reached limit");
             if (intervention()) {
                 return FilterDataStatus::StopIterationNoBuffer;
             }
@@ -275,7 +291,7 @@ FilterDataStatus HttpModSecurityFilter::encodeData(Buffer::Instance& data, bool 
     }
 
     if (end_stream) {
-        response_processed_ = true;
+        status_.response_processed = true;
         modsec_transaction_->processResponseBody();
     }
     if (intervention()) {
@@ -284,85 +300,85 @@ FilterDataStatus HttpModSecurityFilter::encodeData(Buffer::Instance& data, bool 
     return getResponseStatus();
 }
 
-FilterTrailersStatus HttpModSecurityFilter::encodeTrailers(Http::ResponseTrailerMap&) {
+FilterTrailersStatus ModSecurityFilter::encodeTrailers(Http::ResponseTrailerMap&) {
     return FilterTrailersStatus::Continue;
 }
 
 
-FilterMetadataStatus HttpModSecurityFilter::encodeMetadata(MetadataMap& metadata_map) {
+FilterMetadataStatus ModSecurityFilter::encodeMetadata(MetadataMap& metadata_map) {
     return FilterMetadataStatus::Continue;
 }
 
-void HttpModSecurityFilter::setEncoderFilterCallbacks(StreamEncoderFilterCallbacks& callbacks) {
+void ModSecurityFilter::setEncoderFilterCallbacks(StreamEncoderFilterCallbacks& callbacks) {
     encoder_callbacks_ = &callbacks;
 }
 
-bool HttpModSecurityFilter::intervention() {
-    if (!intervined_ && modsec_transaction_->m_it.disruptive) {
-        // intervined_ must be set to true before sendLocalReply to avoid reentrancy when encoding the reply
-        intervined_ = true;
+bool ModSecurityFilter::intervention() {
+    if (!status_.intervined && modsec_transaction_->m_it.disruptive) {
+        // status_.intervined must be set to true before sendLocalReply to avoid reentrancy when encoding the reply
+        status_.intervined = true;
         ENVOY_LOG(debug, "intervention");
         decoder_callbacks_->sendLocalReply(static_cast<Http::Code>(modsec_transaction_->m_it.status), 
                                            "ModSecurity Action\n",
                                            [](Http::HeaderMap& headers) {
                                            }, absl::nullopt, "");
     }
-    return intervined_;
+    return status_.intervined;
 }
 
 
-FilterHeadersStatus HttpModSecurityFilter::getRequestHeadersStatus() {
-    if (intervined_) {
+FilterHeadersStatus ModSecurityFilter::getRequestHeadersStatus() {
+    if (status_.intervined) {
         ENVOY_LOG(debug, "StopIteration");
         return FilterHeadersStatus::StopIteration;
     }
-    if (request_processed_) {
+    if (status_.request_processed) {
         ENVOY_LOG(debug, "Continue");
         return FilterHeadersStatus::Continue;
     }
-    // If disruptive, hold until request_processed_, otherwise let the data flow.
+    // If disruptive, hold until status_.request_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
     return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
                 FilterHeadersStatus::StopIteration : 
                 FilterHeadersStatus::Continue;
 }
 
-FilterDataStatus HttpModSecurityFilter::getRequestStatus() {
-    if (intervined_) {
+FilterDataStatus ModSecurityFilter::getRequestStatus() {
+    if (status_.intervined) {
         ENVOY_LOG(debug, "StopIterationNoBuffer");
         return FilterDataStatus::StopIterationNoBuffer;
     }
-    if (request_processed_) {
+    if (status_.request_processed) {
         ENVOY_LOG(debug, "Continue");
         return FilterDataStatus::Continue;
     }
-    // If disruptive, hold until request_processed_, otherwise let the data flow.
+    // If disruptive, hold until status_.request_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
     return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
-                FilterDataStatus::StopIterationAndBuffer : 
+                FilterDataStatus::StopIterationAndBuffer :
                 FilterDataStatus::Continue;
 }
 
-FilterHeadersStatus HttpModSecurityFilter::getResponseHeadersStatus() {
-    if (intervined_ || response_processed_) {
+FilterHeadersStatus ModSecurityFilter::getResponseHeadersStatus() {
+    if (status_.intervined || status_.response_processed) {
         // If intervined, let encodeData return the localReply
         ENVOY_LOG(debug, "Continue");
         return FilterHeadersStatus::Continue;
     }
-    // If disruptive, hold until response_processed_, otherwise let the data flow.
+    // If disruptive, hold until status_.response_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
     return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
                 FilterHeadersStatus::StopIteration : 
                 FilterHeadersStatus::Continue;
 }
 
-FilterDataStatus HttpModSecurityFilter::getResponseStatus() {
-    if (intervined_ || response_processed_) {
+FilterDataStatus ModSecurityFilter::getResponseStatus() {
+    if (status_.intervined || status_.response_processed) {
         // If intervined, let encodeData return the localReply
         ENVOY_LOG(debug, "Continue");
         return FilterDataStatus::Continue;
     }
-    // If disruptive, hold until response_processed_, otherwise let the data flow.
+    // If disruptive, hold until status_.response_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
     return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
                 FilterDataStatus::StopIterationAndBuffer : 
@@ -370,14 +386,14 @@ FilterDataStatus HttpModSecurityFilter::getResponseStatus() {
 
 }
 
-void HttpModSecurityFilter::_logCb(void *data, const void *ruleMessagev) {
-    auto filter_ = reinterpret_cast<HttpModSecurityFilter*>(data);
+void ModSecurityFilter::_logCb(void *data, const void *ruleMessagev) {
+    auto filter_ = reinterpret_cast<ModSecurityFilter*>(data);
     auto ruleMessage = reinterpret_cast<const modsecurity::RuleMessage *>(ruleMessagev);
 
     filter_->logCb(ruleMessage);
 }
 
-void HttpModSecurityFilter::logCb(const modsecurity::RuleMessage * ruleMessage) {
+void ModSecurityFilter::logCb(const modsecurity::RuleMessage * ruleMessage) {
     if (ruleMessage == nullptr) {
         ENVOY_LOG(error, "ruleMessage == nullptr");
         return;

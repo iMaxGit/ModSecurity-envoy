@@ -2,13 +2,14 @@
 
 #include <string>
 
-#include "common/common/logger.h"
 #include "envoy/server/filter_config.h"
 #include "envoy/thread_local/thread_local.h"
+
+#include "common/common/logger.h"
 #include "well_known_names.h"
 #include "webhook_fetcher.h"
 
-#include "http-filter-modsecurity/http_filter.pb.h"
+#include "http-filter-modsecurity/modsecurity_filter.pb.h"
 
 #include "modsecurity/modsecurity.h"
 #include "modsecurity/rules_set.h"
@@ -16,16 +17,16 @@
 namespace Envoy {
 namespace Http {
 
-class HttpModSecurityFilterConfig : public Logger::Loggable<Logger::Id::filter>,
-                                    public WebhookFetcherCallback {
+class ModSecurityFilterConfig : public Logger::Loggable<Logger::Id::filter>,
+                                public WebhookFetcherCallback {
 public:
-  HttpModSecurityFilterConfig(const envoy::config::filter::http::modsecurity::ModsecurityFilterConfigDecoder& proto_config,
-                              Server::Configuration::FactoryContext&);
-  ~HttpModSecurityFilterConfig();
+  ModSecurityFilterConfig(const modsecurity_filter::FilterConfig& proto_config,
+                          Server::Configuration::FactoryContext&);
+  ~ModSecurityFilterConfig();
 
   const std::string& rules_path() const { return rules_path_; }
   const std::string& rules_inline() const { return rules_inline_; }
-  const envoy::config::filter::http::modsecurity::ModsecurityWebhook& webhook() const { return webhook_; }
+  const modsecurity_filter::Webhook& webhook() const { return webhook_; }
 
   WebhookFetcherSharedPtr webhook_fetcher();
 
@@ -45,11 +46,11 @@ private:
 
   const std::string rules_path_;
   const std::string rules_inline_;
-  const envoy::config::filter::http::modsecurity::ModsecurityWebhook webhook_;
+  const modsecurity_filter::Webhook webhook_;
   ThreadLocal::SlotPtr tls_;
 };
 
-typedef std::shared_ptr<HttpModSecurityFilterConfig> HttpModSecurityFilterConfigSharedPtr;
+typedef std::shared_ptr<ModSecurityFilterConfig> ModSecurityFilterConfigSharedPtr;
 
 /**
  * Transaction flow:
@@ -67,16 +68,16 @@ typedef std::shared_ptr<HttpModSecurityFilterConfig> HttpModSecurityFilterConfig
  * 2. Non-disruptive - always return Continue
  *   
  */
-class HttpModSecurityFilter : public StreamFilter,
-                              public Logger::Loggable<Logger::Id::filter> {
+class ModSecurityFilter : public StreamFilter,
+                          public Logger::Loggable<Logger::Id::filter> {
 public:
   /**
    * This static function will be called by modsecurity and internally invoke logCb filter's method
    */
   static void _logCb(void* data, const void* ruleMessagev);
 
-    HttpModSecurityFilter(HttpModSecurityFilterConfigSharedPtr);
-  ~HttpModSecurityFilter();
+    ModSecurityFilter(ModSecurityFilterConfigSharedPtr);
+  ~ModSecurityFilter();
 
   // Http::StreamFilterBase
   void onDestroy() override;
@@ -96,7 +97,7 @@ public:
   FilterMetadataStatus encodeMetadata(MetadataMap& metadata_map) override;
 
 private:
-  const HttpModSecurityFilterConfigSharedPtr config_;
+  const ModSecurityFilterConfigSharedPtr config_;
   StreamDecoderFilterCallbacks* decoder_callbacks_;
   StreamEncoderFilterCallbacks* encoder_callbacks_;
   std::shared_ptr<modsecurity::Transaction> modsec_transaction_;
@@ -113,14 +114,14 @@ private:
   FilterHeadersStatus getResponseHeadersStatus();
   FilterDataStatus getResponseStatus();
 
-  // This bool is set by intervention before generating a local reply.
-  // Once set, it means that for this http session is already intervined and any subsequent call to the filter's methods
-  // will return ::Continue.
-  // This is to allow the local reply to flow back to the downstream.
-  bool intervined_;
-  bool request_processed_;
-  bool response_processed_;
-  // TODO - convert three booleans to state?
+  struct ModSecurityStatus {
+    ModSecurityStatus() : intervined(0), request_processed(0), response_processed(0) {}
+    bool intervined;
+    bool request_processed;
+    bool response_processed;
+  };
+
+  ModSecurityStatus status_;
 };
 
 

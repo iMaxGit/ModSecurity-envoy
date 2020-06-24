@@ -7,18 +7,17 @@ load(
     "envoy_cc_test"
 )
 
-alias(
-    name = "envoy",
-    actual = ":envoy-static",
-)
-
 envoy_cc_binary(
-    name = "envoy-static",
+    name = "envoy",
     repository = "@envoy",
     deps = [
-        "@modsecurity//:lib",
-        "//http-filter-modsecurity:http_filter_lib",
-        "//http-filter-modsecurity:http_filter_config",
+        "//http-filter-modsecurity:modsecurity_filter_config",
         "@envoy//source/exe:envoy_main_entry_lib",
     ],
+)
+
+sh_test(
+    name = "envoy_binary_test",
+    srcs = ["envoy_binary_test.sh"],
+    data = [":envoy"],
 )

@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package envoy.config.filter.http.modsecurity;
+package modsecurity_filter;
 
 import "envoy/config/core/v3/http_uri.proto";
 import "validate/validate.proto";
 
-message ModsecurityFilterConfigDecoder {
+message FilterConfig {
     // If set, rules are loaded from this path
     string rules_path = 1;
     
@@ -14,10 +14,10 @@ message ModsecurityFilterConfigDecoder {
     string rules_inline = 2;
 
     // If set, a webhook will be called when a rule is matched. (non-disruptive actions only since ModSecurity >= v3.0.3)
-    ModsecurityWebhook webhook = 3;
+    Webhook webhook = 3;
 }
 
-message ModsecurityWebhook {
+message Webhook {
     // The http server URI to trigger the webhook.
     envoy.config.core.v3.HttpUri http_uri = 1 [(validate.rules).message.required = true];
 
