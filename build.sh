@@ -23,6 +23,7 @@ case $1 in
 
         if [ -d /usr/local/modsecurity/lib/pkgconfig ]; then
             export PKG_CONFIG_PATH="/usr/local/modsecurity/lib/pkgconfig:$PKG_CONFIG_PATH"
+            export LD_LIBRARY_PATH="/usr/local/modsecurity/lib:$LD_LIBRARY_PATH"
         fi
 
         if ! pkg-config modsecurity --exists; then
@@ -42,14 +43,6 @@ workspace(name = "envoy_filter_modsecurity")
 local_repository(
     name = "envoy",
     path = "envoy",
-)
-
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-http_archive(
-    name = "bazel_pkg_config",
-    strip_prefix = "bazel_pkg_config-master",
-    urls = ["https://github.com/cherrry/bazel_pkg_config/archive/master.zip"],
 )
 
 load("@bazel_pkg_config//:pkg_config.bzl", "pkg_config")
