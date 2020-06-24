@@ -41,7 +41,7 @@ private:
         std::make_shared<Http::ModSecurityFilterConfig>(proto_config, context);
 
     return [config, &context](Http::FilterChainFactoryCallbacks& callbacks) -> void {
-      auto filter = new Http::ModSecurityFilter(config)
+      auto filter = new Http::ModSecurityFilter(config);
       callbacks.addStreamFilter(Http::StreamFilterSharedPtr{filter});
     };
   }
