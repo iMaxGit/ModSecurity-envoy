@@ -6,7 +6,6 @@
 #include "envoy/thread_local/thread_local.h"
 
 #include "common/common/logger.h"
-#include "well_known_names.h"
 #include "webhook_fetcher.h"
 
 #include "http-filter-modsecurity/modsecurity_filter.pb.h"
