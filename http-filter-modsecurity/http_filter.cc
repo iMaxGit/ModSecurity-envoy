@@ -239,6 +239,7 @@ FilterHeadersStatus HttpModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap
             },
             this);
     modsec_transaction_->processResponseHeaders(code, 
+    modsec_transaction_->processResponseHeaders(response_code, 
             getProtocolString(encoder_callbacks_->streamInfo().protocol().value_or(Protocol::Http11)));
         
     if (intervention()) {
