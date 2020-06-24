@@ -20,7 +20,7 @@ envoy_cc_library(
     hdrs = ["webhook_fetcher.h"],
     repository = "@envoy",
     deps = [
-        "@envoy_api//envoy/config/core/v3:pkg",
+        "@envoy_api//envoy/config/core/v3:pkg_cc_proto",
         "@envoy//source/exe:envoy_common_lib",
     ],
 )
