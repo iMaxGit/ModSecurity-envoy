@@ -110,8 +110,12 @@ FilterHeadersStatus HttpModSecurityFilter::decodeHeaders(Http::RequestHeaderMap&
     }
     // TODO - do we want to support dynamicMetadata?
     const auto& metadata = decoder_callbacks_->route()->routeEntry()->metadata();
-    const auto& disable = Envoy::Config::Metadata::metadataValue(metadata, ModSecurityMetadataFilter::get().ModSecurity, MetadataModSecurityKey::get().Disable);
-    const auto& disable_request = Envoy::Config::Metadata::metadataValue(metadata, ModSecurityMetadataFilter::get().ModSecurity, MetadataModSecurityKey::get().DisableRequest);
+    const auto& disable =  Config::Metadata::metadataValue(metadata.get(),
+                                                           ModSecurityMetadataFilter::get().ModSecurity,
+                                                           MetadataModSecurityKey::get().Disable);
+    const auto& disable_response =  Config::Metadata::metadataValue(metadata.get(),
+                                                                    ModSecurityMetadataFilter::get().ModSecurity,
+                                                                    MetadataModSecurityKey::get().DisableResponse);
     if (disable_request.bool_value() || disable.bool_value()) {
         ENVOY_LOG(debug, "Filter disabled");
         request_processed_ = true;
@@ -219,16 +223,19 @@ FilterHeadersStatus HttpModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap
     }
     // TODO - do we want to support dynamicMetadata?
     const auto& metadata = encoder_callbacks_->route()->routeEntry()->metadata();
-    const auto& disable = Envoy::Config::Metadata::metadataValue(metadata, ModSecurityMetadataFilter::get().ModSecurity, MetadataModSecurityKey::get().Disable);
-    const auto& disable_response = Envoy::Config::Metadata::metadataValue(metadata, ModSecurityMetadataFilter::get().ModSecurity, MetadataModSecurityKey::get().DisableResponse);
+    const auto& disable =  Config::Metadata::metadataValue(metadata.get(),
+                                                           ModSecurityMetadataFilter::get().ModSecurity,
+                                                           MetadataModSecurityKey::get().Disable);
+    const auto& disable_response =  Config::Metadata::metadataValue(metadata.get(),
+                                                                    ModSecurityMetadataFilter::get().ModSecurity,
+                                                                    MetadataModSecurityKey::get().DisableResponse);
     if (disable.bool_value() || disable_response.bool_value()) {
         ENVOY_LOG(debug, "Filter disabled");
         response_processed_ = true;
         return FilterHeadersStatus::Continue;
     }
 
-    auto status = headers.getStatus();
-    uint64_t code = Http::Utility::getResponseStatus(headers);
+    uint64_t response_code = Http::Utility::getResponseStatus(headers);
     headers.iterate(
             [](const HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
                 static_cast<HttpModSecurityFilter*>(context)->modsec_transaction_->addResponseHeader(
@@ -238,7 +245,6 @@ FilterHeadersStatus HttpModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap
                 return Http::HeaderMap::Iterate::Continue;
             },
             this);
-    modsec_transaction_->processResponseHeaders(code, 
     modsec_transaction_->processResponseHeaders(response_code, 
             getProtocolString(encoder_callbacks_->streamInfo().protocol().value_or(Protocol::Http11)));
         
