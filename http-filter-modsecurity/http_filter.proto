@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package envoy.config.filter.http.modsecurity;
 
-import "envoy/api/v2/core/http_uri.proto";
+import "envoy/config/core/v3/http_uri.proto";
 import "validate/validate.proto";
 
 message ModsecurityFilterConfigDecoder {
@@ -19,7 +19,7 @@ message ModsecurityFilterConfigDecoder {
 
 message ModsecurityWebhook {
     // The http server URI to trigger the webhook.
-    envoy.api.v2.core.HttpUri http_uri = 1 [(validate.rules).message.required = true];
+    envoy.config.core.v3.HttpUri http_uri = 1 [(validate.rules).message.required = true];
 
     // If provided, an X-Envoy-Webhook-Signature-Value header will be added to the request with HMAC-SHA256 over the contents and `secret` as its key.
     string secret = 2;

@@ -7,6 +7,7 @@
 #include "common/common/logger.h"
 
 #include "http-filter-modsecurity/http_filter.pb.h"
+#include "envoy/config/core/v3/http_uri.pb.h"
 
 namespace Envoy {
 namespace Http {
