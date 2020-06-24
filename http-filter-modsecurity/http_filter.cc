@@ -14,6 +14,7 @@
 
 #include "modsecurity/rule.h"
 #include "modsecurity/rule_message.h"
+#include "modsecurity/rules_set.h"
 #include "modsecurity/rules_set_properties.h"
 
 namespace Envoy {
@@ -31,7 +32,7 @@ HttpModSecurityFilterConfig::HttpModSecurityFilterConfig(const envoy::config::fi
     modsec_->setServerLogCb(HttpModSecurityFilter::_logCb, modsecurity::RuleMessageLogProperty |
                                                            modsecurity::IncludeFullHighlightLogProperty);
 
-    modsec_rules_.reset(new modsecurity::Rules());
+    modsec_rules_.reset(new modsecurity::RulesSet());
     if (!rules_path().empty()) {
         int rulesLoaded = modsec_rules_->loadFromUri(rules_path().c_str());
         ENVOY_LOG(debug, "Loading ModSecurity config from {}", rules_path());

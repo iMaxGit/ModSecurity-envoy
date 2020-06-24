@@ -11,7 +11,7 @@
 #include "http-filter-modsecurity/http_filter.pb.h"
 
 #include "modsecurity/modsecurity.h"
-#include "modsecurity/rules.h"
+#include "modsecurity/rules_set.h"
 
 namespace Envoy {
 namespace Http {
@@ -30,7 +30,7 @@ public:
   WebhookFetcherSharedPtr webhook_fetcher();
 
   std::shared_ptr<modsecurity::ModSecurity> modsec_;
-  std::shared_ptr<modsecurity::Rules> modsec_rules_;
+  std::shared_ptr<modsecurity::RulesSet> modsec_rules_;
 
   // Webhook Callbacks
   void onSuccess(const Http::ResponseMessagePtr& response) override;
