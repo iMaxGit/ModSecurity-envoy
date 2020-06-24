@@ -126,7 +126,7 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
         return getRequestHeadersStatus();
     }
     const auto filter_meta =
-        decoder_callbacks_->route()->routeEntry()->metadata().filter_metadata().at(ModSecurityMetadataFilter::get().ModSecurity);
+        decoder_callbacks_->route()->routeEntry()->metadata().filter_metadata().at(MOD_SECURITY_FILTER_NAME);
     const auto& disable =  filter_meta.fields().at("disable");
     const auto& disable_request =  filter_meta.fields().at("disable_request");
     if (disable_request.bool_value() || disable.bool_value()) {
@@ -235,7 +235,7 @@ FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& he
         return getResponseHeadersStatus();
     }
     const auto filter_meta =
-        encoder_callbacks_->route()->routeEntry()->metadata().filter_metadata().at(ModSecurityMetadataFilter::get().ModSecurity);
+        encoder_callbacks_->route()->routeEntry()->metadata().filter_metadata().at(MOD_SECURITY_FILTER_NAME);
     const auto& disable =  filter_meta.fields().at("disable");
     const auto& disable_response =  filter_meta.fields().at("disable_response");
     if (disable.bool_value() || disable_response.bool_value()) {

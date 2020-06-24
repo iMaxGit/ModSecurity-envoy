@@ -14,6 +14,10 @@
 #include "modsecurity/modsecurity.h"
 #include "modsecurity/rules_set.h"
 
+
+#define  MOD_SECURITY_FILTER_NAME   "envoy.filters.http.modsecurity"
+
+
 namespace Envoy {
 namespace Http {
 
