@@ -125,16 +125,25 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
         ENVOY_LOG(debug, "Processed");
         return getRequestHeadersStatus();
     }
-    const auto filter_meta =
-        decoder_callbacks_->route()->routeEntry()->metadata().filter_metadata().at(MOD_SECURITY_FILTER_NAME);
-    const auto& disable =  filter_meta.fields().at("disable");
-    const auto& disable_request =  filter_meta.fields().at("disable_request");
-    if (disable_request.bool_value() || disable.bool_value()) {
-        ENVOY_LOG(debug, "Filter disabled");
-        status_.request_processed = true;
-        return FilterHeadersStatus::Continue;
+
+    const auto& metadata = decoder_callbacks_.streamInfo().dynamicMetadata().filter_metadata();
+    const auto filter_it = metadata.find(MOD_SECURITY_FILTER_NAME);
+    if (filter_it != metadata.end()) {
+        const auto fields = filter_it->second.fields();
+        const auto disable_it = fields.find("disable");
+        if (disable_it != fields.end() || disable_it.bool_value()) {
+            ENVOY_LOG(debug, "Filter disabled");
+            status_.request_processed = true;
+            return FilterHeadersStatus::Continue;
+        }
+        const auto disable_request_it = fields.find("disable_request");
+        if (disable_request_it != fields.end() || disable_request_it.bool_value()) {
+            ENVOY_LOG(debug, "Filter disabled");
+            status_.request_processed = true;
+            return FilterHeadersStatus::Continue;
+        }
     }
-    
+
     auto downstreamAddress = decoder_callbacks_->streamInfo().downstreamLocalAddress();
     // TODO - Upstream is (always?) still not resolved in this stage. Use our local proxy's ip. Is this what we want?
     ASSERT(decoder_callbacks_->connection() != nullptr);
@@ -234,14 +243,23 @@ FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& he
         ENVOY_LOG(debug, "Processed");
         return getResponseHeadersStatus();
     }
-    const auto filter_meta =
-        encoder_callbacks_->route()->routeEntry()->metadata().filter_metadata().at(MOD_SECURITY_FILTER_NAME);
-    const auto& disable =  filter_meta.fields().at("disable");
-    const auto& disable_response =  filter_meta.fields().at("disable_response");
-    if (disable.bool_value() || disable_response.bool_value()) {
-        ENVOY_LOG(debug, "Filter disabled");
-        status_.response_processed = true;
-        return FilterHeadersStatus::Continue;
+
+    const auto& metadata = decoder_callbacks_.streamInfo().dynamicMetadata().filter_metadata();
+    const auto filter_it = metadata.find(MOD_SECURITY_FILTER_NAME);
+    if (filter_it != metadata.end()) {
+        const auto fields = filter_it->second.fields();
+        const auto disable_it = fields.find("disable");
+        if (disable_it != fields.end() || disable_it.bool_value()) {
+            ENVOY_LOG(debug, "Filter disabled");
+            status_.request_processed = true;
+            return FilterHeadersStatus::Continue;
+        }
+        const auto disable_response_it = fields.find("disable_response");
+        if (disable_response_it != fields.end() || disable_response_it.bool_value()) {
+            ENVOY_LOG(debug, "Filter disabled");
+            status_.request_processed = true;
+            return FilterHeadersStatus::Continue;
+        }
     }
 
     uint64_t response_code = Http::Utility::getResponseStatus(headers);
