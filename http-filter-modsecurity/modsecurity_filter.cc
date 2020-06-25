@@ -131,13 +131,13 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
     if (filter_it != metadata.end()) {
         const auto fields = filter_it->second.fields();
         const auto disable_it = fields.find("disable");
-        if (disable_it != fields.end() || disable_it.bool_value()) {
+        if (disable_it != fields.end() || disable_it->second.bool_value()) {
             ENVOY_LOG(debug, "Filter disabled");
             status_.request_processed = true;
             return FilterHeadersStatus::Continue;
         }
         const auto disable_request_it = fields.find("disable_request");
-        if (disable_request_it != fields.end() || disable_request_it.bool_value()) {
+        if (disable_request_it != fields.end() || disable_request_it->second.bool_value()) {
             ENVOY_LOG(debug, "Filter disabled");
             status_.request_processed = true;
             return FilterHeadersStatus::Continue;
@@ -249,13 +249,13 @@ FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& he
     if (filter_it != metadata.end()) {
         const auto fields = filter_it->second.fields();
         const auto disable_it = fields.find("disable");
-        if (disable_it != fields.end() || disable_it.bool_value()) {
+        if (disable_it != fields.end() || disable_it->second.bool_value()) {
             ENVOY_LOG(debug, "Filter disabled");
             status_.request_processed = true;
             return FilterHeadersStatus::Continue;
         }
         const auto disable_response_it = fields.find("disable_response");
-        if (disable_response_it != fields.end() || disable_response_it.bool_value()) {
+        if (disable_response_it != fields.end() || disable_response_it->second.bool_value()) {
             ENVOY_LOG(debug, "Filter disabled");
             status_.request_processed = true;
             return FilterHeadersStatus::Continue;
