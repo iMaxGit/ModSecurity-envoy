@@ -30,7 +30,7 @@ static_resources:
           http_filters:
           - name: envoy.filters.http.modsecurity          # before envoy.router because order matters!
             config:
-             rules: conf/modsecurity.conf
+              rules_path: conf/modsecurity.conf
           - name: envoy.router
             config: {}
   clusters:
