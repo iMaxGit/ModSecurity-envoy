@@ -126,7 +126,7 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
         return getRequestHeadersStatus();
     }
 
-    const auto& metadata = decoder_callbacks_.streamInfo().dynamicMetadata().filter_metadata();
+    const auto& metadata = decoder_callbacks_->streamInfo().dynamicMetadata().filter_metadata();
     const auto filter_it = metadata.find(MOD_SECURITY_FILTER_NAME);
     if (filter_it != metadata.end()) {
         const auto fields = filter_it->second.fields();
@@ -244,7 +244,7 @@ FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& he
         return getResponseHeadersStatus();
     }
 
-    const auto& metadata = decoder_callbacks_.streamInfo().dynamicMetadata().filter_metadata();
+    const auto& metadata = decoder_callbacks_->streamInfo().dynamicMetadata().filter_metadata();
     const auto filter_it = metadata.find(MOD_SECURITY_FILTER_NAME);
     if (filter_it != metadata.end()) {
         const auto fields = filter_it->second.fields();
