@@ -15,7 +15,7 @@ namespace ModSecurity {
 class ModSecurityFilterFactory
     : public Common::FactoryBase<envoy::extensions::filters::http::modsecurity::v1::ModSecurity> {
 public:
-  ModSecurityFilterFactory() : FactoryBase(MODSEC_FILTER_NAME) {}
+  ModSecurityFilterFactory() : FactoryBase(FILTER_NAME) {}
 
 private:
   Http::FilterFactoryCb
