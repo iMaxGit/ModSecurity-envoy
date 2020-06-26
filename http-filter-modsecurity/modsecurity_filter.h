@@ -79,14 +79,14 @@ private:
     WebhookFetcherSharedPtr webhook_fetcher_;
   };
 
-  ModSecurityStats stats_;
-  Runtime::Loader& runtime_;
-
   // config data
   const std::string rules_path_;
   const std::string rules_inline_;
   const envoy::extensions::filters::http::modsecurity::v1::Webhook webhook_;
   ThreadLocal::SlotPtr tls_;
+
+  ModSecurityStats stats_;
+  Runtime::Loader& runtime_;
 
   // share modsecurity obj
   std::shared_ptr<modsecurity::ModSecurity> modsec_;
