@@ -30,7 +30,9 @@ namespace Extensions {
 namespace HttpFilters {
 namespace ModSecurity {
 
-#define MODSEC_FILTER_NAME "envoy.filters.http.modsecurity"
+
+const char* FILTER_NAME = "envoy.filters.http.modsecurity";
+
 
 #define ALL_MODSEC_STATS(COUNTER)             \
   COUNTER(request_processed)                  \
