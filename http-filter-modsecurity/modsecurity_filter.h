@@ -60,8 +60,8 @@ public:
   const std::string& rules_inline() const { return rules_inline_; }
   const envoy::extensions::filters::http::modsecurity::v1::Webhook& webhook() const { return webhook_; }
 
-  std::shared_ptr<modsecurity::ModSecurity>& modsec() const { return modsec_; }
-  std::shared_ptr<modsecurity::RulesSet>& modsec_rules() const { return modsec_rules_; }
+  std::shared_ptr<modsecurity::ModSecurity> modsec() const { return modsec_; }
+  std::shared_ptr<modsecurity::RulesSet> modsec_rules() const { return modsec_rules_; }
 
   WebhookFetcherSharedPtr webhook_fetcher();
 
@@ -108,7 +108,7 @@ typedef std::shared_ptr<ModSecurityFilterConfig> ModSecurityFilterConfigSharedPt
  * 2. Non-disruptive - always return Continue
  *   
  */
-class ModSecurityFilter : public StreamFilter,
+class ModSecurityFilter : public Http::StreamFilter,
                           public Logger::Loggable<Logger::Id::filter> {
 public:
   /**
