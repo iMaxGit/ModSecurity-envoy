@@ -70,6 +70,9 @@ public:
   void onFailure(FailureReason reason) override;
 
 private:
+  static ModSecurityStats generateStats(const std::string& prefix, Stats::Scope& scope) {
+    return ModSecurityStats{ALL_MODSEC_STATS(POOL_COUNTER_PREFIX(scope, prefix))};
+  }
 
   struct ThreadLocalWebhook : public ThreadLocal::ThreadLocalObject {
     ThreadLocalWebhook(WebhookFetcher* webhook_fetcher) : webhook_fetcher_(webhook_fetcher) {}
