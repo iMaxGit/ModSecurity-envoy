@@ -129,14 +129,12 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
     const auto filter_it = filter_metadata.find(MOD_SECURITY_FILTER_NAME);
     if (filter_it != filter_metadata.end() && !filter_it->second.empty()) {
         const auto& metadata_fields = filter_it->second.fields();
-        const auto disable_it = metadata_fields.find("disable");
-        if (disable_it != metadata_fields.end() && disable_it->second.bool_value()) {
+        if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
             ENVOY_LOG(debug, "Filter disabled");
             status_.request_processed = true;
             return FilterHeadersStatus::Continue;
         }
-        const auto disable_request_it = metadata_fields.find("disable_request");
-        if (disable_request_it != metadata_fields.end() && disable_request_it->second.bool_value()) {
+        if (metadata_fields.contains("disable_request") && metadata_fields.at("disable_request").bool_value()) {
             ENVOY_LOG(debug, "Filter disabled(request)");
             status_.request_processed = true;
             return FilterHeadersStatus::Continue;
@@ -245,16 +243,14 @@ FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& he
 
     const auto& filter_metadata = encoder_callbacks_->route()->routeEntry()->metadata().filter_metadata();
     const auto filter_it = filter_metadata.find(MOD_SECURITY_FILTER_NAME);
-    if (filter_it != filter_metadata.end() && !filter_it->second.empty()) {
+    if (filter_it != filter_metadata.end()) {
         const auto& metadata_fields = filter_it->second.fields();
-        const auto disable_it = metadata_fields.find("disable");
-        if (disable_it != metadata_fields.end() && disable_it->second.bool_value()) {
+        if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
             ENVOY_LOG(debug, "Filter disabled");
             status_.request_processed = true;
             return FilterHeadersStatus::Continue;
         }
-        const auto disable_response_it = metadata_fields.find("disable_response");
-        if (disable_response_it != metadata_fields.end() && disable_response_it->second.bool_value()) {
+        if (metadata_fields.contains("disable_response") && metadata_fields.at("disable_response").bool_value()) {
             ENVOY_LOG(debug, "Filter disabled(response)");
             status_.request_processed = true;
             return FilterHeadersStatus::Continue;
