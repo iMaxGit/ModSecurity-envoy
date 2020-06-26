@@ -43,7 +43,6 @@ envoy_cc_library(
 envoy_cc_extension(
     name = "modsecurity_filter_config",
     srcs = ["modsecurity_config.cc"],
-    hdrs = ["json_utils.h"],
     security_posture = "unknown",
     repository = "@envoy",
     deps = [

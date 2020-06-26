@@ -3,7 +3,6 @@
 
 #include "modsecurity_filter.h"
 
-#include "json_utils.h"
 #include "envoy/registry/registry.h"
 
 #include "http-filter-modsecurity/modsecurity_filter.pb.h"
