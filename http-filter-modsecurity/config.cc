@@ -25,7 +25,7 @@ Http::FilterFactoryCb ModSecurityFilterFactory::createFilterFactoryFromProtoType
   };
 }
 
-REGISTER_FACTORY(ModSecurityFilterFactory, NamedHttpFilterConfigFactory);
+REGISTER_FACTORY(ModSecurityFilterFactory, Server::Configuration::NamedHttpFilterConfigFactory);
 
 } // namespace ModSecurity
 } // namespace HttpFilters
