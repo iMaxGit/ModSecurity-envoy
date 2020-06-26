@@ -3,10 +3,25 @@ syntax = "proto3";
 // package modsecurity.filter;
 package envoy.extensions.filters.http.modsecurity.v1;
 
+import "envoy/api/v2/core/base.proto";
+import "google/protobuf/wrappers.proto";
 import "envoy/config/core/v3/http_uri.proto";
+
+import "udpa/annotations/status.proto";
 import "validate/validate.proto";
 
+option java_package = "io.envoyproxy.envoy.extensions.filters.http.modsecurity.v1";
+option java_outer_classname = "ModSecurityProto";
+option java_multiple_files = true;
+option (udpa.annotations.file_status).package_version_status = ACTIVE;
+
+// [#protodoc-title: ModSecurity]
+// ModSecurity filter
+// [#extension: envoy.filters.http.modsecurity]
+
+// [#next-free-field: 5]
 message ModSecurity {
+
     // If set, rules are loaded from this path
     string rules_path = 1;
     
@@ -15,13 +30,14 @@ message ModSecurity {
     string rules_inline = 2;
 
     // If set, a webhook will be called when a rule is matched. (non-disruptive actions only since ModSecurity >= v3.0.3)
+    message Webhook {
+        // The http server URI to trigger the webhook.
+        envoy.config.core.v3.HttpUri http_uri = 1 [(validate.rules).message.required = true];
+
+        // If provided, an X-Envoy-Webhook-Signature-Value header will be added to the request with HMAC-SHA256 over the contents and `secret` as its key.
+        string secret = 2;
+    }
+
     Webhook webhook = 3;
-}
 
-message Webhook {
-    // The http server URI to trigger the webhook.
-    envoy.config.core.v3.HttpUri http_uri = 1 [(validate.rules).message.required = true];
-
-    // If provided, an X-Envoy-Webhook-Signature-Value header will be added to the request with HMAC-SHA256 over the contents and `secret` as its key.
-    string secret = 2;
 }

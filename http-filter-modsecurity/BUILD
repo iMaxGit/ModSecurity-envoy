@@ -12,7 +12,9 @@ envoy_package()
 
 api_proto_package(
     deps = [
-        "@envoy_api//envoy/config/core/v3:pkg"
+        "@envoy//envoy/api/v2/core:pkg",
+        "@envoy_api//envoy/config/core/v3:pkg",
+        "@com_github_cncf_udpa//udpa/annotations:pkg",
     ]
 )
 
@@ -35,6 +37,7 @@ envoy_cc_library(
     deps = [
         ":pkg_cc_proto",
         ":webhook_fetch_lib",
+        "@envoy//source/extensions/filters/http/common:jwks_fetcher_lib",
         "@modsecurity//:lib",
         "@envoy//source/exe:envoy_common_lib",
     ],
@@ -52,6 +55,7 @@ envoy_cc_extension(
         "@envoy//source/common/protobuf:utility_lib",
         "@envoy//include/envoy/network:filter_interface",
         "@envoy//include/envoy/server:filter_config_interface",
+        "@envoy//source/extensions/filters/http/common:factory_base_lib",
     ],
 )
 

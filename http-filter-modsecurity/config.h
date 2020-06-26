@@ -22,6 +22,7 @@ private:
   createFilterFactoryFromProtoTyped(const envoy::extensions::filters::http::modsecurity::v1::ModSecurity& config,
                                     const std::string& stats_prefix,
                                     Server::Configuration::FactoryContext& context) override;
+
 };
 
 DECLARE_FACTORY(ModSecurityFilterFactory);
