@@ -23,14 +23,11 @@ cd ModSecurity-envoy
 git submodule update --init
 ```
 
-The directory structure should be as follows:
-```
-.
-+-- ModSecurity-envoy
-|  +-- modsecurity
-|  |  +-- include -> ../../ModSecurity/headers
-|  |  +-- libmodsecurity.a -> ../../ModSecurity/src/.libs/libmodsecurity.a
-+-- ModSecurity
+ModSecurity dependencies:
+
+```bash
+sudo apt-get install -y libtool automake pkg-config make
+sudo apt-get install -y g++ flex bison curl doxygen libyajl-dev libgeoip-dev dh-autoreconf libcurl4-gnutls-dev libxml2 libpcre++-dev libxml2-dev
 ```
 
 For more details on how to compile ModSecurity read ModSecurity's [documentation](https://github.com/SpiderLabs/ModSecurity#compilation).
@@ -38,16 +35,15 @@ For more details on how to compile ModSecurity read ModSecurity's [documentation
 ### Compiling on host
 
 You can compile ModSecurity-Envoy on host, the same as you would compile Envoy.
-However, you will need these additional dependencies:
-
-```bash
-sudo apt-get install -y libtool cmake realpath clang-format-5.0 automake 
-sudo apt-get install -y g++ flex bison curl doxygen libyajl-dev libgeoip-dev libtool dh-autoreconf libcurl4-gnutls-dev libxml2 libpcre++-dev libxml2-dev
-```
 
 To build run
 ```bash
 ./build build
+```
+
+To change envoy version
+```bash
+./build set-version {VERSION}
 ```
 
 For more information on envoy's building system read Envoy's [documentation](https://github.com/envoyproxy/envoy).
@@ -101,6 +97,10 @@ The configuration for the filter is provided under the http_filters:
         - name: envoy.router
           config: {}
 ```
+
+## Known Issues
+
+- Cannot use with typed_config (crash)
 
 ## OWASP ModSecurity Core Rule Set (CRS)
 
