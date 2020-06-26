@@ -38,7 +38,7 @@ const char* FILTER_NAME = "envoy.filters.http.modsecurity";
 
 
 struct ModSecurityStats {
-  ALL_GZIP_STATS(GENERATE_COUNTER_STRUCT)
+  ALL_MODSEC_STATS(GENERATE_COUNTER_STRUCT)
 };
 
 
