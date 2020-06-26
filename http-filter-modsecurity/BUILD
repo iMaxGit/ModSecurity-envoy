@@ -1,12 +1,14 @@
-package(default_visibility = ["//visibility:public"])
-
 load(
     "@envoy//bazel:envoy_build_system.bzl",
+    "envoy_cc_extension",
     "envoy_cc_library",
     "envoy_cc_test",
+    "envoy_package",
 )
 
 load("@envoy_api//bazel:api_build_system.bzl", "api_proto_package")
+
+envoy_package()
 
 api_proto_package(
     deps = [
@@ -38,10 +40,11 @@ envoy_cc_library(
     ],
 )
 
-envoy_cc_library(
+envoy_cc_extension(
     name = "modsecurity_filter_config",
     srcs = ["modsecurity_config.cc"],
     hdrs = ["json_utils.h"],
+    security_posture = "unknown",
     repository = "@envoy",
     deps = [
         ":modsecurity_filter_lib",
