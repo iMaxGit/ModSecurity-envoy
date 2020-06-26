@@ -126,7 +126,7 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
     }
 
     const auto& filter_metadata = decoder_callbacks_->route()->routeEntry()->metadata()->filter_metadata();
-    const auto filter_it = metadata.find(MOD_SECURITY_FILTER_NAME);
+    const auto filter_it = filter_metadata.find(MOD_SECURITY_FILTER_NAME);
     if (filter_it != filter_metadata.end()) {
         const auto& metadata_fields = filter_it->second.fields();
         const auto disable_it = metadata_fields.find("disable");
@@ -244,7 +244,7 @@ FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& he
     }
 
     const auto& filter_metadata = encoder_callbacks_->route()->routeEntry()->metadata()->filter_metadata();
-    const auto filter_it = metadata.find(MOD_SECURITY_FILTER_NAME);
+    const auto filter_it = filter_metadata.find(MOD_SECURITY_FILTER_NAME);
     if (filter_it != filter_metadata.end()) {
         const auto& metadata_fields = filter_it->second.fields();
         const auto disable_it = metadata_fields.find("disable");
