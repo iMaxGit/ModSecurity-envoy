@@ -84,8 +84,8 @@ case $1 in
 
         gen_workspace
 
-        bazel test //:envoy_binary_test || exit 1
-        bazel test //http-filter-modsecurity:modsecurity_filter_integration_test || exit 1
+        bazel test //:envoy_binary_test ${@:2} || exit 1
+        bazel test //http-filter-modsecurity:modsecurity_filter_integration_test ${@:2} || exit 1
 
         echo "Done!"
         ;;
@@ -100,7 +100,7 @@ case $1 in
 
         echo "Start build"
 
-        bazel build //:envoy || exit 1
+        bazel build //:envoy ${@:2} || exit 1
 
         echo "Done!"
         ;;
