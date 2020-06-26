@@ -98,10 +98,6 @@ The configuration for the filter is provided under the http_filters:
           config: {}
 ```
 
-## Known Issues
-
-- Cannot use with typed_config (crash)
-
 ## OWASP ModSecurity Core Rule Set (CRS)
 
 CRS is a set of generic attack

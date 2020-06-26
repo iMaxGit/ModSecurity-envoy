@@ -23,15 +23,16 @@ static_resources:
                   cluster: service1
                 metadata:
                   filter_metadata:
-                    envoy.filters.http.modsecurity:
-                      # disable: true
+                    envoy.filters.http.modsecurity: # optional
+                      disable: false # set true if you want disable
                       # disable_request: true
                       # disable_response: true
           http_filters:
-          - name: envoy.filters.http.modsecurity          # before envoy.router because order matters!
-            config:
-              rules_path: conf/modsecurity.conf
-          - name: envoy.router
+          - name: envoy.filters.http.modsecurity # before envoy.router because order matters!
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.modsecurity.v1.ModSecurity
+              rules_path: /etc/envoy/modsecurity.conf
+          - name: envoy.filters.http.router
             config: {}
   clusters:
   - name: service1
