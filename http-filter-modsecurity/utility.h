@@ -6,12 +6,9 @@
 #include "modsecurity/rule_message.h"
 
 namespace Envoy {
-namespace Http {
-
-/**
- * @return A json escaped string
- */
-std::string escapeJson(const std::string& s);
+namespace Extensions {
+namespace HttpFilters {
+namespace ModSecurity {
 
 /**
  * Converts a RuleMessage to json 
@@ -19,5 +16,7 @@ std::string escapeJson(const std::string& s);
  */
 std::string getRuleMessageAsJsonString(const modsecurity::RuleMessage* ruleMessage);
 
-} // Http
-} // Envoy
+} // namespace ModSecurity
+} // namespace HttpFilters
+} // namespace Extensions
+} // namespace Envoy

@@ -3,7 +3,9 @@
 #include "common/protobuf/utility.h"
 
 namespace Envoy {
-namespace Http {
+namespace Extensions {
+namespace HttpFilters {
+namespace ModSecurity {
 
 std::string getRuleMessageAsJsonString(const modsecurity::RuleMessage* ruleMessage) {
     ProtobufWkt::Struct document;
@@ -36,5 +38,7 @@ std::string getRuleMessageAsJsonString(const modsecurity::RuleMessage* ruleMessa
     return MessageUtil::getJsonStringFromMessage(document);
 }
 
-} // namespace Http
+} // namespace ModSecurity
+} // namespace HttpFilters
+} // namespace Extensions
 } // namespace Envoy
