@@ -9,7 +9,9 @@
 #include "envoy/config/core/v3/http_uri.pb.h"
 
 namespace Envoy {
-namespace Http {
+namespace Extensions {
+namespace HttpFilters {
+namespace ModSecurity {
 
 class WebhookHeaderValues {
 public:
@@ -91,5 +93,7 @@ private:
 
 using WebhookFetcherSharedPtr = std::shared_ptr<WebhookFetcher>;
 
-} // namespace Http
+} // namespace ModSecurity
+} // namespace HttpFilters
+} // namespace Extensions
 } // namespace Envoy

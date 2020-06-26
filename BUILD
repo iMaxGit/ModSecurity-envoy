@@ -11,7 +11,7 @@ envoy_cc_binary(
     name = "envoy",
     repository = "@envoy",
     deps = [
-        "//http-filter-modsecurity:modsecurity_filter_config",
+        "//http-filter-modsecurity:config",
         "@envoy//source/exe:envoy_main_entry_lib",
     ],
 )

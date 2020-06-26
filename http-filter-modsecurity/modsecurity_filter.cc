@@ -1,17 +1,19 @@
 #include <string>
 #include <vector>
-#include <iostream>
-
-#include "modsecurity_filter.h"
 
 #include "utility.h"
+#include "modsecurity_filter.h"
 
-#include "absl/container/fixed_array.h"
-#include "envoy/server/filter_config.h"
+#include "http-filter-modsecurity/modsecurity_filter.pb.h"
+#include "envoy/stats/scope.h"
+
+#include "common/common/macros.h"
+
+#include "common/config/metadata.h"
 #include "common/http/utility.h"
 #include "common/http/headers.h"
-#include "common/config/metadata.h"
-#include "common/json/json_loader.h"
+
+#include "absl/container/fixed_array.h"
 
 #include "modsecurity/rule.h"
 #include "modsecurity/rule_message.h"
@@ -19,19 +21,23 @@
 #include "modsecurity/rules_set_properties.h"
 
 namespace Envoy {
-namespace Http {
+namespace Extensions {
+namespace HttpFilters {
+namespace ModSecurity {
 
 /* 
  *  Filter Config
  */
 
 // constructor
-ModSecurityFilterConfig::ModSecurityFilterConfig(const modsecurity::filter::Config& proto_config,
+ModSecurityFilterConfig::ModSecurityFilterConfig(const envoy::extensions::filters::http::modsecurity::v1::ModSecurity& proto_config,
                                                  Server::Configuration::FactoryContext& context)
     : rules_path_(proto_config.rules_path()),
       rules_inline_(proto_config.rules_inline()),
       webhook_(proto_config.webhook()),
-      tls_(context.threadLocal().allocateSlot()) {
+      tls_(context.threadLocal().allocateSlot()),
+      stats_(generateStats(stats_prefix + "modsecurity.", context.scope())),
+      runtime_(context.runtime()) {
 
     modsec_.reset(new modsecurity::ModSecurity());
     modsec_->setConnectorInformation("ModSecurity-envoy v0.1.0 (ModSecurity)");
@@ -93,7 +99,7 @@ void ModSecurityFilterConfig::onFailure(FailureReason) {
 ModSecurityFilter::ModSecurityFilter(ModSecurityFilterConfigSharedPtr config)
     : config_(config) {
     
-    modsec_transaction_.reset(new modsecurity::Transaction(config_->modsec_.get(), config_->modsec_rules_.get(), this));
+    modsec_transaction_.reset(new modsecurity::Transaction(config_->modsec().get(), config_->modsec_rules().get(), this));
 }
 
 // destructor
@@ -126,7 +132,7 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
     }
 
     const auto& filter_metadata = decoder_callbacks_->route()->routeEntry()->metadata().filter_metadata();
-    const auto filter_it = filter_metadata.find(MOD_SECURITY_FILTER_NAME);
+    const auto filter_it = filter_metadata.find(FILTER_NAME);
     if (filter_it != filter_metadata.end()) {
         const auto& metadata_fields = filter_it->second.fields();
         if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
@@ -150,10 +156,10 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
     ASSERT(downstreamAddress->type() == Network::Address::Type::Ip);
     ASSERT(localAddress != nullptr);
     ASSERT(localAddress->type() == Network::Address::Type::Ip);
-    modsec_transaction_->processConnection(downstreamAddress->ip()->addressAsString().c_str(), 
-                                          downstreamAddress->ip()->port(),
-                                          localAddress->ip()->addressAsString().c_str(), 
-                                          localAddress->ip()->port());
+    modsec_transaction_->processConnection(downstreamAddress->ip()->addressAsString().c_str(),
+                                           downstreamAddress->ip()->port(),
+                                           localAddress->ip()->addressAsString().c_str(),
+                                           localAddress->ip()->port());
     if (intervention()) {
         return FilterHeadersStatus::StopIteration;
     }
@@ -242,7 +248,7 @@ FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& he
     }
 
     const auto& filter_metadata = encoder_callbacks_->route()->routeEntry()->metadata().filter_metadata();
-    const auto filter_it = filter_metadata.find(MOD_SECURITY_FILTER_NAME);
+    const auto filter_it = filter_metadata.find(FILTER_NAME);
     if (filter_it != filter_metadata.end()) {
         const auto& metadata_fields = filter_it->second.fields();
         if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
@@ -341,13 +347,16 @@ bool ModSecurityFilter::intervention() {
 
 FilterHeadersStatus ModSecurityFilter::getRequestHeadersStatus() {
     if (status_.intervined) {
+        config_->stats().request_processed_.inc();
         ENVOY_LOG(debug, "StopIteration");
         return FilterHeadersStatus::StopIteration;
     }
     if (status_.request_processed) {
+        config_->stats().request_processed_.inc();
         ENVOY_LOG(debug, "Continue");
         return FilterHeadersStatus::Continue;
     }
+    config_->stats().request_processed_.inc();
     // If disruptive, hold until status_.request_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
     return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
@@ -357,13 +366,16 @@ FilterHeadersStatus ModSecurityFilter::getRequestHeadersStatus() {
 
 FilterDataStatus ModSecurityFilter::getRequestStatus() {
     if (status_.intervined) {
+        config_->stats().request_processed_.inc();
         ENVOY_LOG(debug, "StopIterationNoBuffer");
         return FilterDataStatus::StopIterationNoBuffer;
     }
     if (status_.request_processed) {
+        config_->stats().request_processed_.inc();
         ENVOY_LOG(debug, "Continue");
         return FilterDataStatus::Continue;
     }
+    config_->stats().request_processed_.inc();
     // If disruptive, hold until status_.request_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
     return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
@@ -373,10 +385,12 @@ FilterDataStatus ModSecurityFilter::getRequestStatus() {
 
 FilterHeadersStatus ModSecurityFilter::getResponseHeadersStatus() {
     if (status_.intervined || status_.response_processed) {
+        config_->stats().response_processed_.inc();
         // If intervined, let encodeData return the localReply
         ENVOY_LOG(debug, "Continue");
         return FilterHeadersStatus::Continue;
     }
+    config_->stats().response_processed_.inc();
     // If disruptive, hold until status_.response_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
     return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
@@ -386,10 +400,12 @@ FilterHeadersStatus ModSecurityFilter::getResponseHeadersStatus() {
 
 FilterDataStatus ModSecurityFilter::getResponseStatus() {
     if (status_.intervined || status_.response_processed) {
+        config_->stats().response_processed_.inc();
         // If intervined, let encodeData return the localReply
         ENVOY_LOG(debug, "Continue");
         return FilterDataStatus::Continue;
     }
+    config_->stats().response_processed_.inc();
     // If disruptive, hold until status_.response_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
     return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
@@ -421,5 +437,8 @@ void ModSecurityFilter::logCb(const modsecurity::RuleMessage* ruleMessage) {
     config_->webhook_fetcher()->invoke(getRuleMessageAsJsonString(ruleMessage));
 }
 
-} // namespace Http
+
+} // namespace ModSecurity
+} // namespace HttpFilters
+} // namespace Extensions
 } // namespace Envoy

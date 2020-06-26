@@ -2,10 +2,20 @@
 
 #include <string>
 
-#include "envoy/server/filter_config.h"
-#include "envoy/thread_local/thread_local.h"
-
 #include "common/common/logger.h"
+#include "common/http/header_map_impl.h"
+
+#include "envoy/thread_local/thread_local.h"
+#include "envoy/http/filter.h"
+#include "envoy/http/header_map.h"
+#include "envoy/runtime/runtime.h"
+
+#include "envoy/stats/scope.h"
+#include "envoy/stats/stats_macros.h"
+
+#include "common/buffer/buffer_impl.h"
+#include "common/protobuf/protobuf.h"
+
 #include "webhook_fetcher.h"
 
 #include "http-filter-modsecurity/modsecurity_filter.pb.h"
@@ -13,28 +23,44 @@
 #include "modsecurity/modsecurity.h"
 #include "modsecurity/rules_set.h"
 
-
-#define  MOD_SECURITY_FILTER_NAME   "envoy.filters.http.modsecurity"
-
-
 namespace Envoy {
-namespace Http {
+namespace Extensions {
+namespace HttpFilters {
+namespace ModSecurity {
+
+
+const char* FILTER_NAME = "envoy.filters.http.modsecurity";
+
+
+#define ALL_MODSEC_STATS(COUNTER)             \
+  COUNTER(request_processed)                  \
+  COUNTER(response_processed)
+
+
+struct ModSecurityStats {
+  ALL_GZIP_STATS(GENERATE_COUNTER_STRUCT)
+};
+
 
 class ModSecurityFilterConfig : public Logger::Loggable<Logger::Id::filter>,
                                 public WebhookFetcherCallback {
 public:
-  ModSecurityFilterConfig(const modsecurity::filter::Config& proto_config,
+  ModSecurityFilterConfig(const envoy::extensions::filters::http::modsecurity::v1::ModSecurity& proto_config,
                           Server::Configuration::FactoryContext&);
   ~ModSecurityFilterConfig();
 
+  Runtime::Loader& runtime() { return runtime_; }
+  ModSecurityStats& stats() { return stats_; }
+
+  // get config
   const std::string& rules_path() const { return rules_path_; }
   const std::string& rules_inline() const { return rules_inline_; }
-  const modsecurity::filter::Webhook& webhook() const { return webhook_; }
+  const envoy::extensions::filters::http::modsecurity::v1::ModSecurity& webhook() const { return webhook_; }
+
+  std::shared_ptr<modsecurity::ModSecurity>& modsec() const { return modsec_; }
+  std::shared_ptr<modsecurity::RulesSet>& modsec_rules() const { return modsec_rules_; }
 
   WebhookFetcherSharedPtr webhook_fetcher();
-
-  std::shared_ptr<modsecurity::ModSecurity> modsec_;
-  std::shared_ptr<modsecurity::RulesSet> modsec_rules_;
 
   // Webhook Callbacks
   void onSuccess(const Http::ResponseMessagePtr& response) override;
@@ -47,10 +73,18 @@ private:
     WebhookFetcherSharedPtr webhook_fetcher_;
   };
 
+  ModSecurityStats stats_;
+  Runtime::Loader& runtime_;
+
+  // config data
   const std::string rules_path_;
   const std::string rules_inline_;
-  const modsecurity::filter::Webhook webhook_;
+  const envoy::extensions::filters::http::modsecurity::v1::ModSecurity webhook_;
   ThreadLocal::SlotPtr tls_;
+
+  // share modsecurity obj
+  std::shared_ptr<modsecurity::ModSecurity> modsec_;
+  std::shared_ptr<modsecurity::RulesSet> modsec_rules_;
 };
 
 typedef std::shared_ptr<ModSecurityFilterConfig> ModSecurityFilterConfigSharedPtr;
@@ -128,5 +162,7 @@ private:
 };
 
 
-} // namespace Http
+} // namespace ModSecurity
+} // namespace HttpFilters
+} // namespace Extensions
 } // namespace Envoy

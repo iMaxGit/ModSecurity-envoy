@@ -9,7 +9,9 @@
 #include "common/crypto/utility.h"
 
 namespace Envoy {
-namespace Http {
+namespace Extensions {
+namespace HttpFilters {
+namespace ModSecurity {
 
 WebhookFetcher::WebhookFetcher(Upstream::ClusterManager& cm,
                               const envoy::config::core::v3::HttpUri& uri,
@@ -64,5 +66,7 @@ void WebhookFetcher::onFailure(const Http::AsyncClient::Request&,
   callback_.onFailure(FailureReason::Network);
 }
 
-} // namespace Http
+} // namespace ModSecurity
+} // namespace HttpFilters
+} // namespace Extensions
 } // namespace Envoy
