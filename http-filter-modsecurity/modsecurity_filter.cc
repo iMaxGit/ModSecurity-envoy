@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include "modsecurity_filter.h"
-#include "envoy/server/filter_config.h"
 
 #include "utility.h"
 
@@ -126,18 +125,18 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
         return getRequestHeadersStatus();
     }
 
-    const auto metadata = decoder_callbacks_->route()->routeEntry()->metadata().filter_metadata();
+    const auto& filter_metadata = decoder_callbacks_->route()->routeEntry()->metadata()->filter_metadata();
     const auto filter_it = metadata.find(MOD_SECURITY_FILTER_NAME);
-    if (filter_it != metadata.end()) {
-        const auto fields = filter_it->second.fields();
-        const auto disable_it = fields.find("disable");
-        if (disable_it != fields.end() || disable_it->second.bool_value()) {
+    if (filter_it != filter_metadata.end()) {
+        const auto& metadata_fields = filter_it->second.fields();
+        const auto disable_it = metadata_fields.find("disable");
+        if (disable_it != metadata_fields.end() || disable_it->second.bool_value()) {
             ENVOY_LOG(debug, "Filter disabled");
             status_.request_processed = true;
             return FilterHeadersStatus::Continue;
         }
-        const auto disable_request_it = fields.find("disable_request");
-        if (disable_request_it != fields.end() || disable_request_it->second.bool_value()) {
+        const auto disable_request_it = metadata_fields.find("disable_request");
+        if (disable_request_it != metadata_fields.end() || disable_request_it->second.bool_value()) {
             ENVOY_LOG(debug, "Filter disabled(request)");
             status_.request_processed = true;
             return FilterHeadersStatus::Continue;
@@ -244,19 +243,18 @@ FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& he
         return getResponseHeadersStatus();
     }
 
-    const auto metadata = encoder_callbacks_->route()->routeEntry()->metadata().filter_metadata();
+    const auto& filter_metadata = encoder_callbacks_->route()->routeEntry()->metadata()->filter_metadata();
     const auto filter_it = metadata.find(MOD_SECURITY_FILTER_NAME);
-    if (filter_it != metadata.end()) {
-        ENVOY_LOG(debug, "Found filter meta");
-        const auto fields = filter_it->second.fields();
-        const auto disable_it = fields.find("disable");
-        if (disable_it != fields.end() || disable_it->second.bool_value()) {
+    if (filter_it != filter_metadata.end()) {
+        const auto& metadata_fields = filter_it->second.fields();
+        const auto disable_it = metadata_fields.find("disable");
+        if (disable_it != metadata_fields.end() || disable_it->second.bool_value()) {
             ENVOY_LOG(debug, "Filter disabled");
             status_.request_processed = true;
             return FilterHeadersStatus::Continue;
         }
-        const auto disable_response_it = fields.find("disable_response");
-        if (disable_response_it != fields.end() || disable_response_it->second.bool_value()) {
+        const auto disable_response_it = metadata_fields.find("disable_response");
+        if (disable_response_it != metadata_fields.end() || disable_response_it->second.bool_value()) {
             ENVOY_LOG(debug, "Filter disabled(response)");
             status_.request_processed = true;
             return FilterHeadersStatus::Continue;
