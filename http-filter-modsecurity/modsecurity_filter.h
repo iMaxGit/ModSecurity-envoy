@@ -31,7 +31,7 @@ namespace HttpFilters {
 namespace ModSecurity {
 
 
-const char* FILTER_NAME = "envoy.filters.http.modsecurity";
+#define MODSEC_FILTER_NAME "envoy.filters.http.modsecurity"
 
 
 #define ALL_MODSEC_STATS(COUNTER)             \
