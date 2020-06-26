@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package http.filter.modsecurity;
+package modsecurity.filter;
 
 import "envoy/config/core/v3/http_uri.proto";
 import "validate/validate.proto";
 
-message FilterConfig {
+message Config {
     // If set, rules are loaded from this path
     string rules_path = 1;
     

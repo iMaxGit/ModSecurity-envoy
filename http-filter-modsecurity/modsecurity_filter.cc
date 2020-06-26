@@ -27,7 +27,7 @@ namespace Http {
  */
 
 // constructor
-ModSecurityFilterConfig::ModSecurityFilterConfig(const http::filter::modsecurity::FilterConfig& proto_config,
+ModSecurityFilterConfig::ModSecurityFilterConfig(const modsecurity::filter::Config& proto_config,
                                                  Server::Configuration::FactoryContext& context)
     : rules_path_(proto_config.rules_path()),
       rules_inline_(proto_config.rules_inline()),
