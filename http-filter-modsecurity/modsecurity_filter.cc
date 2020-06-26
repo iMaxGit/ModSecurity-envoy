@@ -7,6 +7,8 @@
 #include "http-filter-modsecurity/modsecurity_filter.pb.h"
 #include "envoy/stats/scope.h"
 
+#include "envoy/server/filter_config.h"
+
 #include "common/common/macros.h"
 
 #include "common/config/metadata.h"

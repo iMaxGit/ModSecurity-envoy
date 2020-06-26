@@ -13,6 +13,8 @@
 #include "envoy/stats/scope.h"
 #include "envoy/stats/stats_macros.h"
 
+#include "envoy/server/filter_config.h"
+
 #include "common/buffer/buffer_impl.h"
 #include "common/protobuf/protobuf.h"
 
