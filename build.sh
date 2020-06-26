@@ -35,7 +35,8 @@ pkg_config(
     name = "modsecurity",
     ignore_opts = [
         "-lmodsecurity"
-    ]
+    ],
+    min_version = "3.0.0"
 )
 EOL
     # patch envoy workspace
