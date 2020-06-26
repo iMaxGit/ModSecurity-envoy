@@ -124,7 +124,7 @@ const char* getProtocolString(const Protocol protocol) {
     NOT_REACHED_GCOVR_EXCL_LINE;
 }
 
-FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& headers, bool end_stream) {
+Http::FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& headers, bool end_stream) {
     ENVOY_LOG(debug, "ModSecurityFilter::decodeHeaders");
     if (status_.intervined || status_.request_processed) {
         ENVOY_LOG(debug, "Processed");
@@ -138,12 +138,12 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
         if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
             ENVOY_LOG(debug, "Filter disabled");
             status_.request_processed = true;
-            return FilterHeadersStatus::Continue;
+            return Http::FilterHeadersStatus::Continue;
         }
         if (metadata_fields.contains("disable_request") && metadata_fields.at("disable_request").bool_value()) {
             ENVOY_LOG(debug, "Filter disabled(request)");
             status_.request_processed = true;
-            return FilterHeadersStatus::Continue;
+            return Http::FilterHeadersStatus::Continue;
         }
     }
 
@@ -161,7 +161,7 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
                                            localAddress->ip()->addressAsString().c_str(),
                                            localAddress->ip()->port());
     if (intervention()) {
-        return FilterHeadersStatus::StopIteration;
+        return Http::FilterHeadersStatus::StopIteration;
     }
 
     auto uri = headers.Path();
@@ -170,7 +170,7 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
                                     std::string(method->value().getStringView()).c_str(),
                                     getProtocolString(decoder_callbacks_->streamInfo().protocol().value_or(Protocol::Http11)));
     if (intervention()) {
-        return FilterHeadersStatus::StopIteration;
+        return Http::FilterHeadersStatus::StopIteration;
     }
     
     headers.iterate(
@@ -193,12 +193,12 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
         status_.request_processed = true;
     }
     if (intervention()) {
-        return FilterHeadersStatus::StopIteration;
+        return Http::Http::FilterHeadersStatus::StopIteration;
     }
     return getRequestHeadersStatus();
 }
 
-FilterDataStatus ModSecurityFilter::decodeData(Buffer::Instance& data, bool end_stream) {
+Http::FilterDataStatus ModSecurityFilter::decodeData(Buffer::Instance& data, bool end_stream) {
     ENVOY_LOG(debug, "ModSecurityFilter::decodeData");
     if (status_.intervined || status_.request_processed) {
         ENVOY_LOG(debug, "Processed");
@@ -213,7 +213,7 @@ FilterDataStatus ModSecurityFilter::decodeData(Buffer::Instance& data, bool end_
             (slice.len_ > 0 && requestLen == modsec_transaction_->getRequestBodyLength())) {
             ENVOY_LOG(debug, "ModSecurityFilter::decodeData appendRequestBody reached limit");
             if (intervention()) {
-                return FilterDataStatus::StopIterationNoBuffer;
+                return Http::FilterDataStatus::StopIterationNoBuffer;
             }
             // Otherwise set to process request
             end_stream = true;
@@ -226,21 +226,21 @@ FilterDataStatus ModSecurityFilter::decodeData(Buffer::Instance& data, bool end_
         modsec_transaction_->processRequestBody();
     }
     if (intervention()) {
-        return FilterDataStatus::StopIterationNoBuffer;
+        return Http::FilterDataStatus::StopIterationNoBuffer;
     } 
     return getRequestStatus();
 }
 
-FilterTrailersStatus ModSecurityFilter::decodeTrailers(Http::RequestTrailerMap&) {
-  return FilterTrailersStatus::Continue;
+Http::FilterTrailersStatus ModSecurityFilter::decodeTrailers(Http::RequestTrailerMap&) {
+  return Http::FilterTrailersStatus::Continue;
 }
 
-void ModSecurityFilter::setDecoderFilterCallbacks(StreamDecoderFilterCallbacks& callbacks) {
+void ModSecurityFilter::setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks& callbacks) {
   decoder_callbacks_ = &callbacks;
 }
 
 
-FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& headers, bool) {
+Http::FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& headers, bool) {
     ENVOY_LOG(debug, "ModSecurityFilter::encodeHeaders");
     if (status_.intervined || status_.response_processed) {
         ENVOY_LOG(debug, "Processed");
@@ -254,12 +254,12 @@ FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& he
         if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
             ENVOY_LOG(debug, "Filter disabled");
             status_.request_processed = true;
-            return FilterHeadersStatus::Continue;
+            return Http::FilterHeadersStatus::Continue;
         }
         if (metadata_fields.contains("disable_response") && metadata_fields.at("disable_response").bool_value()) {
             ENVOY_LOG(debug, "Filter disabled(response)");
             status_.request_processed = true;
-            return FilterHeadersStatus::Continue;
+            return Http::FilterHeadersStatus::Continue;
         }
     }
 
@@ -277,16 +277,16 @@ FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& he
             getProtocolString(encoder_callbacks_->streamInfo().protocol().value_or(Protocol::Http11)));
         
     if (intervention()) {
-        return FilterHeadersStatus::StopIteration;
+        return Http::FilterHeadersStatus::StopIteration;
     }
     return getResponseHeadersStatus();
 }
 
-FilterHeadersStatus ModSecurityFilter::encode100ContinueHeaders(Http::ResponseHeaderMap&) {
-    return FilterHeadersStatus::Continue;
+Http::FilterHeadersStatus ModSecurityFilter::encode100ContinueHeaders(Http::ResponseHeaderMap&) {
+    return Http::FilterHeadersStatus::Continue;
 }
 
-FilterDataStatus ModSecurityFilter::encodeData(Buffer::Instance& data, bool end_stream) {
+Http::FilterDataStatus ModSecurityFilter::encodeData(Buffer::Instance& data, bool end_stream) {
     ENVOY_LOG(debug, "ModSecurityFilter::encodeData");
     if (status_.intervined || status_.response_processed) {
         ENVOY_LOG(debug, "Processed");
@@ -301,7 +301,7 @@ FilterDataStatus ModSecurityFilter::encodeData(Buffer::Instance& data, bool end_
             (slice.len_ > 0 && responseLen == modsec_transaction_->getResponseBodyLength())) {
             ENVOY_LOG(debug, "ModSecurityFilter::encodeData appendResponseBody reached limit");
             if (intervention()) {
-                return FilterDataStatus::StopIterationNoBuffer;
+                return Http::FilterDataStatus::StopIterationNoBuffer;
             }
             // Otherwise set to process response
             end_stream = true;
@@ -314,21 +314,21 @@ FilterDataStatus ModSecurityFilter::encodeData(Buffer::Instance& data, bool end_
         modsec_transaction_->processResponseBody();
     }
     if (intervention()) {
-        return FilterDataStatus::StopIterationNoBuffer;
+        return Http::FilterDataStatus::StopIterationNoBuffer;
     }
     return getResponseStatus();
 }
 
-FilterTrailersStatus ModSecurityFilter::encodeTrailers(Http::ResponseTrailerMap&) {
-    return FilterTrailersStatus::Continue;
+Http::FilterTrailersStatus ModSecurityFilter::encodeTrailers(Http::ResponseTrailerMap&) {
+    return Http::FilterTrailersStatus::Continue;
 }
 
 
-FilterMetadataStatus ModSecurityFilter::encodeMetadata(MetadataMap&) {
-    return FilterMetadataStatus::Continue;
+Http::FilterMetadataStatus ModSecurityFilter::encodeMetadata(Http::MetadataMap&) {
+    return Http::FilterMetadataStatus::Continue;
 }
 
-void ModSecurityFilter::setEncoderFilterCallbacks(StreamEncoderFilterCallbacks& callbacks) {
+void ModSecurityFilter::setEncoderFilterCallbacks(Http::StreamEncoderFilterCallbacks& callbacks) {
     encoder_callbacks_ = &callbacks;
 }
 
@@ -345,72 +345,72 @@ bool ModSecurityFilter::intervention() {
 }
 
 
-FilterHeadersStatus ModSecurityFilter::getRequestHeadersStatus() {
+Http::FilterHeadersStatus ModSecurityFilter::getRequestHeadersStatus() {
     if (status_.intervined) {
         config_->stats().request_processed_.inc();
         ENVOY_LOG(debug, "StopIteration");
-        return FilterHeadersStatus::StopIteration;
+        return Http::FilterHeadersStatus::StopIteration;
     }
     if (status_.request_processed) {
         config_->stats().request_processed_.inc();
         ENVOY_LOG(debug, "Continue");
-        return FilterHeadersStatus::Continue;
+        return Http::FilterHeadersStatus::Continue;
     }
     config_->stats().request_processed_.inc();
     // If disruptive, hold until status_.request_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
     return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
-                FilterHeadersStatus::StopIteration : 
-                FilterHeadersStatus::Continue;
+                Http::FilterHeadersStatus::StopIteration : 
+                Http::FilterHeadersStatus::Continue;
 }
 
-FilterDataStatus ModSecurityFilter::getRequestStatus() {
+Http::FilterDataStatus ModSecurityFilter::getRequestStatus() {
     if (status_.intervined) {
         config_->stats().request_processed_.inc();
         ENVOY_LOG(debug, "StopIterationNoBuffer");
-        return FilterDataStatus::StopIterationNoBuffer;
+        return Http::FilterDataStatus::StopIterationNoBuffer;
     }
     if (status_.request_processed) {
         config_->stats().request_processed_.inc();
         ENVOY_LOG(debug, "Continue");
-        return FilterDataStatus::Continue;
+        return Http::FilterDataStatus::Continue;
     }
     config_->stats().request_processed_.inc();
     // If disruptive, hold until status_.request_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
     return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
-                FilterDataStatus::StopIterationAndBuffer :
-                FilterDataStatus::Continue;
+                Http::FilterDataStatus::StopIterationAndBuffer :
+                Http::FilterDataStatus::Continue;
 }
 
-FilterHeadersStatus ModSecurityFilter::getResponseHeadersStatus() {
+Http::FilterHeadersStatus ModSecurityFilter::getResponseHeadersStatus() {
     if (status_.intervined || status_.response_processed) {
         config_->stats().response_processed_.inc();
         // If intervined, let encodeData return the localReply
         ENVOY_LOG(debug, "Continue");
-        return FilterHeadersStatus::Continue;
+        return Http::FilterHeadersStatus::Continue;
     }
     config_->stats().response_processed_.inc();
     // If disruptive, hold until status_.response_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
     return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
-                FilterHeadersStatus::StopIteration : 
-                FilterHeadersStatus::Continue;
+                Http::FilterHeadersStatus::StopIteration : 
+                Http::FilterHeadersStatus::Continue;
 }
 
-FilterDataStatus ModSecurityFilter::getResponseStatus() {
+Http::FilterDataStatus ModSecurityFilter::getResponseStatus() {
     if (status_.intervined || status_.response_processed) {
         config_->stats().response_processed_.inc();
         // If intervined, let encodeData return the localReply
         ENVOY_LOG(debug, "Continue");
-        return FilterDataStatus::Continue;
+        return Http::FilterDataStatus::Continue;
     }
     config_->stats().response_processed_.inc();
     // If disruptive, hold until status_.response_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
     return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
-                FilterDataStatus::StopIterationAndBuffer : 
-                FilterDataStatus::Continue;
+                Http::FilterDataStatus::StopIterationAndBuffer : 
+                Http::FilterDataStatus::Continue;
 
 }
 

@@ -120,23 +120,23 @@ public:
   void onDestroy() override;
 
   // Http::StreamDecoderFilter
-  FilterHeadersStatus decodeHeaders(Http::RequestHeaderMap&, bool end_stream) override;
-  FilterDataStatus decodeData(Buffer::Instance&, bool end_stream) override;
-  FilterTrailersStatus decodeTrailers(Http::RequestTrailerMap&) override;
-  void setDecoderFilterCallbacks(StreamDecoderFilterCallbacks&) override;
+  Http::FilterHeadersStatus decodeHeaders(Http::RequestHeaderMap&, bool end_stream) override;
+  Http::FilterDataStatus decodeData(Buffer::Instance&, bool end_stream) override;
+  Http::FilterTrailersStatus decodeTrailers(Http::RequestTrailerMap&) override;
+  void setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks&) override;
 
   // Http::StreamEncoderFilter
-  FilterHeadersStatus encode100ContinueHeaders(Http::ResponseHeaderMap& headers) override;
-  FilterHeadersStatus encodeHeaders(Http::ResponseHeaderMap&, bool end_stream) override;
-  FilterDataStatus encodeData(Buffer::Instance&, bool end_stream) override;
-  FilterTrailersStatus encodeTrailers(Http::ResponseTrailerMap&) override;
-  void setEncoderFilterCallbacks(StreamEncoderFilterCallbacks&) override;
-  FilterMetadataStatus encodeMetadata(MetadataMap& metadata_map) override;
+  Http::FilterHeadersStatus encode100ContinueHeaders(Http::ResponseHeaderMap& headers) override;
+  Http::FilterHeadersStatus encodeHeaders(Http::ResponseHeaderMap&, bool end_stream) override;
+  Http::FilterDataStatus encodeData(Buffer::Instance&, bool end_stream) override;
+  Http::FilterTrailersStatus encodeTrailers(Http::ResponseTrailerMap&) override;
+  void setEncoderFilterCallbacks(Http::StreamEncoderFilterCallbacks&) override;
+  Http::FilterMetadataStatus encodeMetadata(Http::MetadataMap& metadata_map) override;
 
 private:
   const ModSecurityFilterConfigSharedPtr config_;
-  StreamDecoderFilterCallbacks* decoder_callbacks_;
-  StreamEncoderFilterCallbacks* encoder_callbacks_;
+  Http::StreamDecoderFilterCallbacks* decoder_callbacks_;
+  Http::StreamEncoderFilterCallbacks* encoder_callbacks_;
   std::shared_ptr<modsecurity::Transaction> modsec_transaction_;
   
   void logCb(const modsecurity::RuleMessage * ruleMessage);
@@ -145,11 +145,11 @@ private:
    */
   bool intervention();
 
-  FilterHeadersStatus getRequestHeadersStatus();
-  FilterDataStatus getRequestStatus();
+  Http::FilterHeadersStatus getRequestHeadersStatus();
+  Http::FilterDataStatus getRequestStatus();
 
-  FilterHeadersStatus getResponseHeadersStatus();
-  FilterDataStatus getResponseStatus();
+  Http::FilterHeadersStatus getResponseHeadersStatus();
+  Http::FilterDataStatus getResponseStatus();
 
   struct ModSecurityStatus {
     ModSecurityStatus() : intervined(0), request_processed(0), response_processed(0) {}
