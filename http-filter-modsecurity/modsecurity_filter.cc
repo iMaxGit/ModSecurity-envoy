@@ -127,7 +127,7 @@ FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& hea
 
     const auto& filter_metadata = decoder_callbacks_->route()->routeEntry()->metadata().filter_metadata();
     const auto filter_it = filter_metadata.find(MOD_SECURITY_FILTER_NAME);
-    if (filter_it != filter_metadata.end() && !filter_it->second.empty()) {
+    if (filter_it != filter_metadata.end()) {
         const auto& metadata_fields = filter_it->second.fields();
         if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
             ENVOY_LOG(debug, "Filter disabled");
