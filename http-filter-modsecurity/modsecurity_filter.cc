@@ -31,6 +31,7 @@ namespace ModSecurity {
 
 // constructor
 ModSecurityFilterConfig::ModSecurityFilterConfig(const envoy::extensions::filters::http::modsecurity::v1::ModSecurity& proto_config,
+                                                 const std::string& stats_prefix,
                                                  Server::Configuration::FactoryContext& context)
     : rules_path_(proto_config.rules_path()),
       rules_inline_(proto_config.rules_inline()),
@@ -110,15 +111,15 @@ void ModSecurityFilter::onDestroy() {
     modsec_transaction_->processLogging();
 }
 
-const char* getProtocolString(const Protocol protocol) {
+const char* getProtocolString(const Http::Protocol protocol) {
     switch (protocol) {
-    case Protocol::Http10:
+    case Http::Protocol::Http10:
         return "1.0";
-    case Protocol::Http11:
+    case Http::Protocol::Http11:
         return "1.1";
-    case Protocol::Http2:
+    case Http::Protocol::Http2:
         return "2.0";
-    case Protocol::Http3:
+    case Http::Protocol::Http3:
         return "3.0";
     }
     NOT_REACHED_GCOVR_EXCL_LINE;
@@ -168,13 +169,13 @@ Http::FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMa
     auto method = headers.Method();
     modsec_transaction_->processURI(std::string(uri->value().getStringView()).c_str(), 
                                     std::string(method->value().getStringView()).c_str(),
-                                    getProtocolString(decoder_callbacks_->streamInfo().protocol().value_or(Protocol::Http11)));
+                                    getProtocolString(decoder_callbacks_->streamInfo().protocol().value_or(Http::Protocol::Http11)));
     if (intervention()) {
         return Http::FilterHeadersStatus::StopIteration;
     }
     
     headers.iterate(
-            [](const HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
+            [](const Http::HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
                 
                 std::string k = std::string(header.key().getStringView());
                 std::string v = std::string(header.value().getStringView());
@@ -193,7 +194,7 @@ Http::FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMa
         status_.request_processed = true;
     }
     if (intervention()) {
-        return Http::Http::FilterHeadersStatus::StopIteration;
+        return Http::FilterHeadersStatus::StopIteration;
     }
     return getRequestHeadersStatus();
 }
@@ -265,7 +266,7 @@ Http::FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderM
 
     uint64_t response_code = Http::Utility::getResponseStatus(headers);
     headers.iterate(
-            [](const HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
+            [](const Http::HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
                 static_cast<ModSecurityFilter*>(context)->modsec_transaction_->addResponseHeader(
                     std::string(header.key().getStringView()).c_str(),
                     std::string(header.value().getStringView()).c_str()
@@ -274,7 +275,7 @@ Http::FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderM
             },
             this);
     modsec_transaction_->processResponseHeaders(response_code, 
-            getProtocolString(encoder_callbacks_->streamInfo().protocol().value_or(Protocol::Http11)));
+            getProtocolString(encoder_callbacks_->streamInfo().protocol().value_or(Http::Protocol::Http11)));
         
     if (intervention()) {
         return Http::FilterHeadersStatus::StopIteration;

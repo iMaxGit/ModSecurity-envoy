@@ -46,6 +46,7 @@ class ModSecurityFilterConfig : public Logger::Loggable<Logger::Id::filter>,
                                 public WebhookFetcherCallback {
 public:
   ModSecurityFilterConfig(const envoy::extensions::filters::http::modsecurity::v1::ModSecurity& proto_config,
+                          const std::string& stats_prefix,
                           Server::Configuration::FactoryContext&);
   ~ModSecurityFilterConfig();
 
