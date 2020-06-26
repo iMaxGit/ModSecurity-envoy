@@ -183,8 +183,8 @@ Http::FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMa
                 // TODO - does this special case makes sense? it doesn't exist on apache/nginx modsecurity bridges.
                 // host header is cannonized to :authority even on http older than 2 
                 // see https://github.com/envoyproxy/envoy/issues/2209
-                if (k == Headers::get().Host.get()) {
-                    static_cast<ModSecurityFilter*>(context)->modsec_transaction_->addRequestHeader(Headers::get().HostLegacy.get().c_str(), v.c_str());
+                if (k == Http::Headers::get().Host.get()) {
+                    static_cast<ModSecurityFilter*>(context)->modsec_transaction_->addRequestHeader(Http::Headers::get().HostLegacy.get().c_str(), v.c_str());
                 }
                 return Http::HeaderMap::Iterate::Continue;
             },
