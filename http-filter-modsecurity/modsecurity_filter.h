@@ -58,7 +58,7 @@ public:
   // get config
   const std::string& rules_path() const { return rules_path_; }
   const std::string& rules_inline() const { return rules_inline_; }
-  const envoy::extensions::filters::http::modsecurity::v1::Webhook& webhook() const { return webhook_; }
+  const envoy::extensions::filters::http::modsecurity::v1::ModSecurity::Webhook& webhook() const { return webhook_; }
 
   std::shared_ptr<modsecurity::ModSecurity> modsec() const { return modsec_; }
   std::shared_ptr<modsecurity::RulesSet> modsec_rules() const { return modsec_rules_; }
@@ -82,7 +82,7 @@ private:
   // config data
   const std::string rules_path_;
   const std::string rules_inline_;
-  const envoy::extensions::filters::http::modsecurity::v1::Webhook webhook_;
+  const envoy::extensions::filters::http::modsecurity::v1::ModSecurity::Webhook webhook_;
   ThreadLocal::SlotPtr tls_;
 
   ModSecurityStats stats_;
