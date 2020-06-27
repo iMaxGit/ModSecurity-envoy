@@ -12,7 +12,7 @@ envoy_package()
 
 api_proto_package(
     deps = [
-        "@envoy//envoy/api/v2/core:pkg",
+        "@envoy_api//envoy/api/v2/core:pkg",
         "@envoy_api//envoy/config/core/v3:pkg",
         "@com_github_cncf_udpa//udpa/annotations:pkg",
     ]
