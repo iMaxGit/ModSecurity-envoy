@@ -36,7 +36,7 @@ pkg_config(
     ignore_opts = [
         "-lmodsecurity"
     ],
-    min_version = "3.0.0"
+    min_version = "3.0.4"
 )
 EOL
     # patch envoy workspace

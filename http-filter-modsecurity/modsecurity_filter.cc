@@ -17,7 +17,7 @@
 
 #include "absl/container/fixed_array.h"
 
-#include "modsecurity/rules_properties.h"
+#include "modsecurity/rules_set_properties.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -44,7 +44,7 @@ ModSecurityFilterConfig::ModSecurityFilterConfig(const envoy::extensions::filter
     modsec_->setServerLogCb(ModSecurityFilter::_logCb,
                             modsecurity::RuleMessageLogProperty | modsecurity::IncludeFullHighlightLogProperty);
 
-    modsec_rules_.reset(new modsecurity::Rules());
+    modsec_rules_.reset(new modsecurity::RulesSet());
     if (!rules_path().empty()) {
         int rulesLoaded = modsec_rules_->loadFromUri(rules_path().c_str());
         ENVOY_LOG(debug, "Loading ModSecurity config from {}", rules_path());
@@ -371,7 +371,7 @@ Http::FilterHeadersStatus ModSecurityFilter::getRequestHeadersStatus() {
     config_->stats().request_processed_.inc();
     // If disruptive, hold until status_.request_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesProperties::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
                 Http::FilterHeadersStatus::StopIteration : 
                 Http::FilterHeadersStatus::Continue;
 }
@@ -390,7 +390,7 @@ Http::FilterDataStatus ModSecurityFilter::getRequestStatus() {
     config_->stats().request_processed_.inc();
     // If disruptive, hold until status_.request_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesProperties::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
                 Http::FilterDataStatus::StopIterationAndBuffer :
                 Http::FilterDataStatus::Continue;
 }
@@ -405,7 +405,7 @@ Http::FilterHeadersStatus ModSecurityFilter::getResponseHeadersStatus() {
     config_->stats().response_processed_.inc();
     // If disruptive, hold until status_.response_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesProperties::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
                 Http::FilterHeadersStatus::StopIteration : 
                 Http::FilterHeadersStatus::Continue;
 }
@@ -420,7 +420,7 @@ Http::FilterDataStatus ModSecurityFilter::getResponseStatus() {
     config_->stats().response_processed_.inc();
     // If disruptive, hold until status_.response_processed, otherwise let the data flow.
     ENVOY_LOG(debug, "RuleEngine");
-    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesProperties::EnabledRuleEngine ? 
+    return modsec_transaction_->getRuleEngineState() == modsecurity::RulesSetProperties::EnabledRuleEngine ? 
                 Http::FilterDataStatus::StopIterationAndBuffer : 
                 Http::FilterDataStatus::Continue;
 
