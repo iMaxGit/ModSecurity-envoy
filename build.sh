@@ -70,7 +70,7 @@ case $1 in
     set-version )
         cd envoy
         if [ -f .git ] || [ -d .git ]; then
-            git pull
+            git pull origin HEAD
             git checkout $2
         else
             echo "Not clone from git"
