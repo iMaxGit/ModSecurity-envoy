@@ -57,7 +57,7 @@ fi
 case $1 in
     list-versions )
         cd envoy
-        if [ -d .git ]; then
+        if [ -f .git ] || [ -d .git ]; then
             git ls-remote --tags 2> /dev/null | grep -o "refs/tags/.*" | sort -rV | grep -o '[^\/]*$'
         else
             echo "Not clone from git"
@@ -69,7 +69,8 @@ case $1 in
         ;;
     set-version )
         cd envoy
-        if [ -d .git ]; then
+        if [ -f .git ] || [ -d .git ]; then
+            git pull
             git checkout $2
         else
             echo "Not clone from git"
