@@ -23,7 +23,7 @@
 #include "http-filter-modsecurity/modsecurity_filter.pb.h"
 
 #include "modsecurity/modsecurity.h"
-#include "modsecurity/rules_set.h"
+#include "modsecurity/rules.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -61,7 +61,7 @@ public:
   const envoy::extensions::filters::http::modsecurity::v1::ModSecurity::Webhook& webhook() const { return webhook_; }
 
   std::shared_ptr<modsecurity::ModSecurity> modsec() const { return modsec_; }
-  std::shared_ptr<modsecurity::RulesSet> modsec_rules() const { return modsec_rules_; }
+  std::shared_ptr<modsecurity::Rules> modsec_rules() const { return modsec_rules_; }
 
   WebhookFetcherSharedPtr webhook_fetcher();
 
@@ -90,7 +90,7 @@ private:
 
   // share modsecurity obj
   std::shared_ptr<modsecurity::ModSecurity> modsec_;
-  std::shared_ptr<modsecurity::RulesSet> modsec_rules_;
+  std::shared_ptr<modsecurity::Rules> modsec_rules_;
 };
 
 typedef std::shared_ptr<ModSecurityFilterConfig> ModSecurityFilterConfigSharedPtr;

@@ -3,8 +3,6 @@
 
 #include "config.h"
 
-#include "modsecurity_filter.h"
-
 #include "envoy/registry/registry.h"
 
 namespace Envoy {
