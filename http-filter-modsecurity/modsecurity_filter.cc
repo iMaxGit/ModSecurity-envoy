@@ -68,9 +68,9 @@ ModSecurityFilterConfig::ModSecurityFilterConfig(const envoy::extensions::filter
     }
 
     tls_->set([this, &context](Event::Dispatcher&) -> ThreadLocal::ThreadLocalObjectSharedPtr {
-      return std::make_shared<ThreadLocalWebhook>(new WebhookFetcher(context.clusterManager(), 
-                webhook_.http_uri(), 
-                webhook_.secret(), 
+      return std::make_shared<ThreadLocalWebhook>(new WebhookFetcher(context.clusterManager(),
+                webhook_.http_uri(),
+                webhook_.secret(),
                 *this));
     });
 }
@@ -134,20 +134,26 @@ Http::FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMa
         return getRequestHeadersStatus();
     }
 
-    const auto& filter_metadata = decoder_callbacks_->route()->routeEntry()->metadata().filter_metadata();
-    const auto filter_it = filter_metadata.find(MODSEC_FILTER_NAME);
-    if (filter_it != filter_metadata.end()) {
-        const auto& metadata_fields = filter_it->second.fields();
-        if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
-            ENVOY_LOG(debug, "Filter disabled");
-            status_.request_processed = true;
-            return Http::FilterHeadersStatus::Continue;
+    const auto& route_entry = decoder_callbacks_->route()->routeEntry();
+    if (route_entry) { // route
+        const auto& filter_metadata = route_entry->metadata().filter_metadata();
+        const auto filter_it = filter_metadata.find(MODSEC_FILTER_NAME);
+        if (filter_it != filter_metadata.end()) {
+            const auto& metadata_fields = filter_it->second.fields();
+            if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
+                ENVOY_LOG(debug, "Filter disabled");
+                status_.request_processed = true;
+                return Http::FilterHeadersStatus::Continue;
+            }
+            if (metadata_fields.contains("disable_request") && metadata_fields.at("disable_request").bool_value()) {
+                ENVOY_LOG(debug, "Filter disabled(request)");
+                status_.request_processed = true;
+                return Http::FilterHeadersStatus::Continue;
+            }
         }
-        if (metadata_fields.contains("disable_request") && metadata_fields.at("disable_request").bool_value()) {
-            ENVOY_LOG(debug, "Filter disabled(request)");
-            status_.request_processed = true;
-            return Http::FilterHeadersStatus::Continue;
-        }
+    } else { // redirect, direct_response
+        status_.request_processed = true;
+        return Http::FilterHeadersStatus::Continue;
     }
 
     auto downstreamAddress = decoder_callbacks_->streamInfo().downstreamLocalAddress();
@@ -250,20 +256,26 @@ Http::FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderM
         return getResponseHeadersStatus();
     }
 
-    const auto& filter_metadata = encoder_callbacks_->route()->routeEntry()->metadata().filter_metadata();
-    const auto filter_it = filter_metadata.find(MODSEC_FILTER_NAME);
-    if (filter_it != filter_metadata.end()) {
-        const auto& metadata_fields = filter_it->second.fields();
-        if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
-            ENVOY_LOG(debug, "Filter disabled");
-            status_.request_processed = true;
-            return Http::FilterHeadersStatus::Continue;
+    const auto& route_entry = encoder_callbacks_->route()->routeEntry();
+    if (route_entry) { // route
+        const auto& filter_metadata = route_entry->metadata().filter_metadata();
+        const auto filter_it = filter_metadata.find(MODSEC_FILTER_NAME);
+        if (filter_it != filter_metadata.end()) {
+            const auto& metadata_fields = filter_it->second.fields();
+            if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
+                ENVOY_LOG(debug, "Filter disabled");
+                status_.request_processed = true;
+                return Http::FilterHeadersStatus::Continue;
+            }
+            if (metadata_fields.contains("disable_response") && metadata_fields.at("disable_response").bool_value()) {
+                ENVOY_LOG(debug, "Filter disabled(response)");
+                status_.request_processed = true;
+                return Http::FilterHeadersStatus::Continue;
+            }
         }
-        if (metadata_fields.contains("disable_response") && metadata_fields.at("disable_response").bool_value()) {
-            ENVOY_LOG(debug, "Filter disabled(response)");
-            status_.request_processed = true;
-            return Http::FilterHeadersStatus::Continue;
-        }
+    } else { // direct, direct_response
+        status_.request_processed = true;
+        return Http::FilterHeadersStatus::Continue;
     }
 
     uint64_t response_code = Http::Utility::getResponseStatus(headers);
