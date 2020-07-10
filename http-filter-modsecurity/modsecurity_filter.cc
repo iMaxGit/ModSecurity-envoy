@@ -73,7 +73,7 @@ ModSecurityFilterConfig::ModSecurityFilterConfig(const envoy::extensions::filter
         };
     }
 
-    if (webhook_) {
+    if (proto_config.has_webhook()) {
         tls_->set([this, &context](Event::Dispatcher&) -> ThreadLocal::ThreadLocalObjectSharedPtr {
           return std::make_shared<ThreadLocalWebhook>(new WebhookFetcher(context.clusterManager(),
                     webhook_.http_uri(),
@@ -89,7 +89,7 @@ ModSecurityFilterConfig::~ModSecurityFilterConfig() {
 
 // webhook
 void ModSecurityFilterConfig::invoke_webhook(const modsecurity::RuleMessage* ruleMessage) {
-    if (tls_) {
+    if (tls_->currentThreadRegistered()) {
         const auto fetcher = tls_->getTyped<ThreadLocalWebhook>().webhook_fetcher_;
         fetcher->invoke(getRuleMessageAsJsonString(ruleMessage));
     }

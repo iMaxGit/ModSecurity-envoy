@@ -76,7 +76,7 @@ public:
   std::shared_ptr<modsecurity::ModSecurity> modsec() const { return modsec_; }
   std::shared_ptr<modsecurity::RulesSet> modsec_rules() const { return modsec_rules_; }
 
-  WebhookFetcherSharedPtr webhook_fetcher();
+  void invoke_webhook(const modsecurity::RuleMessage*);
 
   // Webhook Callbacks
   void onSuccess(const Http::ResponseMessagePtr& response) override;
