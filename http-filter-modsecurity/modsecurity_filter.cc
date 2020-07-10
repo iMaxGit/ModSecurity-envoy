@@ -73,12 +73,14 @@ ModSecurityFilterConfig::ModSecurityFilterConfig(const envoy::extensions::filter
         };
     }
 
-    tls_->set([this, &context](Event::Dispatcher&) -> ThreadLocal::ThreadLocalObjectSharedPtr {
-      return std::make_shared<ThreadLocalWebhook>(new WebhookFetcher(context.clusterManager(),
-                webhook_.http_uri(),
-                webhook_.secret(),
-                *this));
-    });
+    if (webhook_) {
+        tls_->set([this, &context](Event::Dispatcher&) -> ThreadLocal::ThreadLocalObjectSharedPtr {
+          return std::make_shared<ThreadLocalWebhook>(new WebhookFetcher(context.clusterManager(),
+                    webhook_.http_uri(),
+                    webhook_.secret(),
+                    *this));
+        });
+    }
 }
 
 // destructor
@@ -86,8 +88,11 @@ ModSecurityFilterConfig::~ModSecurityFilterConfig() {
 }
 
 // webhook
-WebhookFetcherSharedPtr ModSecurityFilterConfig::webhook_fetcher() {
-    return tls_->getTyped<ThreadLocalWebhook>().webhook_fetcher_;
+void ModSecurityFilterConfig::invoke_webhook(const modsecurity::RuleMessage* ruleMessage) {
+    if (tls_) {
+        const auto fetcher = tls_->getTyped<ThreadLocalWebhook>().webhook_fetcher_;
+        fetcher->invoke(getRuleMessageAsJsonString(ruleMessage));
+    }
 }
 
 // on success
@@ -451,7 +456,8 @@ void ModSecurityFilter::logCb(const modsecurity::RuleMessage* ruleMessage) {
                     // see https://github.com/SpiderLabs/ModSecurity/commit/91daeee9f6a61b8eda07a3f77fc64bae7c6b7c36
                     ruleMessage->m_isDisruptive ? "Disruptive" : "Non-disruptive",
                     modsecurity::RuleMessage::log(ruleMessage));
-    config_->webhook_fetcher()->invoke(getRuleMessageAsJsonString(ruleMessage));
+
+    config_->invoke_webhook(ruleMessage);
 }
 
 
