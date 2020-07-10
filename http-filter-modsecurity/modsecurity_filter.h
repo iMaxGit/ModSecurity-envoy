@@ -157,10 +157,11 @@ private:
   Http::StreamDecoderFilterCallbacks* decoder_callbacks_;
   Http::StreamEncoderFilterCallbacks* encoder_callbacks_;
   std::shared_ptr<modsecurity::Transaction> modsec_transaction_;
-  std::shared_ptr<ModSecurityFilterConfig> decoder_route_conig_;
-  std::shared_ptr<ModSecurityFilterConfig> encoder_route_conig_;
   
   void logCb(const modsecurity::RuleMessage * ruleMessage);
+
+  bool requestDisabled();
+  bool responseDisabled();
   /**
    * @return true if intervention of current transaction is disruptive, false otherwise
    */

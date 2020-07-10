@@ -133,6 +133,17 @@ const char* getProtocolString(const Http::Protocol protocol) {
     NOT_REACHED_GCOVR_EXCL_LINE;
 }
 
+bool ModSecurityFilter::requestDisabled() {
+    const auto* route = decoder_callbacks_->route();
+    if (route && route->routeEntry()) {
+        const auto* entry = route->routeEntry();
+        const auto* route_local =
+            entry->mostSpecificPerFilterConfigTyped<ModSecurityRouteSpecificFilterConfig>(filter_name);
+        return route_local->disable_request();
+    }
+    return true;
+}
+
 Http::FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMap& headers, bool end_stream) {
     ENVOY_LOG(debug, "ModSecurityFilter::decodeHeaders");
     if (status_.intervined || status_.request_processed) {
@@ -140,7 +151,7 @@ Http::FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMa
         return getRequestHeadersStatus();
     }
 
-    if (decoder_route_conig_ && decoder_route_conig_->disable_request()) {
+    if (requestDisabled()) {
         ENVOY_LOG(debug, "Filter disabled");
         status_.request_processed = true;
         return Http::FilterHeadersStatus::Continue;
@@ -236,14 +247,18 @@ Http::FilterTrailersStatus ModSecurityFilter::decodeTrailers(Http::RequestTraile
 
 void ModSecurityFilter::setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks& callbacks) {
     decoder_callbacks_ = &callbacks;
-
-    if (callbacks.route() && callbacks.route()->routeEntry()) {
-        const auto* entry = callbacks.route()->routeEntry();
-        decoder_route_conig_.reset(
-            entry->mostSpecificPerFilterConfigTyped<ModSecurityRouteSpecificFilterConfig>(filter_name));
-    }
 }
 
+bool ModSecurityFilter::responseDisabled() {
+    const auto* route = encoder_callbacks_->route();
+    if (route && route->routeEntry()) {
+        const auto* entry = route->routeEntry();
+        const auto* route_local =
+            entry->mostSpecificPerFilterConfigTyped<ModSecurityRouteSpecificFilterConfig>(filter_name);
+        return route_local->disable_response();
+    }
+    return true;
+}
 
 Http::FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& headers, bool) {
     ENVOY_LOG(debug, "ModSecurityFilter::encodeHeaders");
@@ -252,7 +267,7 @@ Http::FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderM
         return getResponseHeadersStatus();
     }
 
-    if (encoder_route_conig_ && encoder_route_conig_->disable_response()) {
+    if (responseDisabled()) {
         ENVOY_LOG(debug, "Filter disabled");
         status_.request_processed = true;
         return Http::FilterHeadersStatus::Continue;
@@ -325,12 +340,6 @@ Http::FilterMetadataStatus ModSecurityFilter::encodeMetadata(Http::MetadataMap&)
 
 void ModSecurityFilter::setEncoderFilterCallbacks(Http::StreamEncoderFilterCallbacks& callbacks) {
     encoder_callbacks_ = &callbacks;
-
-    if (callbacks.route() && callbacks.route()->routeEntry()) {
-        const auto* entry = callbacks.route()->routeEntry();
-        encoder_route_conig_.reset(
-            entry->mostSpecificPerFilterConfigTyped<ModSecurityRouteSpecificFilterConfig>(filter_name));
-    }
 }
 
 bool ModSecurityFilter::intervention() {
