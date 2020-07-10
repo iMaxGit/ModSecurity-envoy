@@ -52,8 +52,8 @@ public:
   bool disable_response() const { return disable_response_; }
 
 private:
-  bool disable_request_;
-  bool disable_response_;
+  const bool disable_request_;
+  const bool disable_response_;
 };
 
 

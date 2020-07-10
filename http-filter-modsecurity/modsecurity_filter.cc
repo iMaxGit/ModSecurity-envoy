@@ -134,12 +134,12 @@ const char* getProtocolString(const Http::Protocol protocol) {
 }
 
 bool ModSecurityFilter::requestDisabled() {
-    const auto* route = decoder_callbacks_->route();
+    const auto route = decoder_callbacks_->route();
     if (route && route->routeEntry()) {
         const auto* entry = route->routeEntry();
         const auto* route_local =
             entry->mostSpecificPerFilterConfigTyped<ModSecurityRouteSpecificFilterConfig>(filter_name);
-        return route_local->disable_request();
+        return route_local && route_local->disable_request();
     }
     return true;
 }
@@ -250,12 +250,12 @@ void ModSecurityFilter::setDecoderFilterCallbacks(Http::StreamDecoderFilterCallb
 }
 
 bool ModSecurityFilter::responseDisabled() {
-    const auto* route = encoder_callbacks_->route();
+    const auto route = encoder_callbacks_->route();
     if (route && route->routeEntry()) {
         const auto* entry = route->routeEntry();
         const auto* route_local =
             entry->mostSpecificPerFilterConfigTyped<ModSecurityRouteSpecificFilterConfig>(filter_name);
-        return route_local->disable_response();
+        return route_local && route_local->disable_response();
     }
     return true;
 }
