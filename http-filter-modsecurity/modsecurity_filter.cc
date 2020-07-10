@@ -24,6 +24,15 @@ namespace Extensions {
 namespace HttpFilters {
 namespace ModSecurity {
 
+/*
+ * Router Local Config
+ */
+
+ModSecurityRouteSpecificFilterConfig::ModSecurityRouteSpecificFilterConfig(
+    const envoy::extensions::filters::http::modsecurity::v1::PerRouteConfig& proto_config)
+    : disable_request_(proto_config.disable()||proto_config.disable_request()),
+      disable_response_(proto_config.disable()||proto_config.disable_response()) {}
+
 /* 
  *  Filter Config
  */
@@ -131,24 +140,8 @@ Http::FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMa
         return getRequestHeadersStatus();
     }
 
-    const auto& route_entry = decoder_callbacks_->route()->routeEntry();
-    if (route_entry) { // route
-        const auto& filter_metadata = route_entry->metadata().filter_metadata();
-        const auto filter_it = filter_metadata.find(MODSEC_FILTER_NAME);
-        if (filter_it != filter_metadata.end()) {
-            const auto& metadata_fields = filter_it->second.fields();
-            if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
-                ENVOY_LOG(debug, "Filter disabled");
-                status_.request_processed = true;
-                return Http::FilterHeadersStatus::Continue;
-            }
-            if (metadata_fields.contains("disable_request") && metadata_fields.at("disable_request").bool_value()) {
-                ENVOY_LOG(debug, "Filter disabled(request)");
-                status_.request_processed = true;
-                return Http::FilterHeadersStatus::Continue;
-            }
-        }
-    } else { // redirect, direct_response
+    if (decoder_route_conig_ && decoder_route_conig_->disable_request()) {
+        ENVOY_LOG(debug, "Filter disabled");
         status_.request_processed = true;
         return Http::FilterHeadersStatus::Continue;
     }
@@ -242,7 +235,12 @@ Http::FilterTrailersStatus ModSecurityFilter::decodeTrailers(Http::RequestTraile
 }
 
 void ModSecurityFilter::setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks& callbacks) {
-  decoder_callbacks_ = &callbacks;
+    decoder_callbacks_ = &callbacks;
+
+    if (callbacks.route() && callbacks.route().routeEntry()) {
+        decoder_route_conig_.reset(
+            entry->mostSpecificPerFilterConfigTyped<ModSecurityRouteSpecificFilterConfig>(filter_name));
+    }
 }
 
 
@@ -253,24 +251,8 @@ Http::FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderM
         return getResponseHeadersStatus();
     }
 
-    const auto& route_entry = encoder_callbacks_->route()->routeEntry();
-    if (route_entry) { // route
-        const auto& filter_metadata = route_entry->metadata().filter_metadata();
-        const auto filter_it = filter_metadata.find(MODSEC_FILTER_NAME);
-        if (filter_it != filter_metadata.end()) {
-            const auto& metadata_fields = filter_it->second.fields();
-            if (metadata_fields.contains("disable") && metadata_fields.at("disable").bool_value()) {
-                ENVOY_LOG(debug, "Filter disabled");
-                status_.request_processed = true;
-                return Http::FilterHeadersStatus::Continue;
-            }
-            if (metadata_fields.contains("disable_response") && metadata_fields.at("disable_response").bool_value()) {
-                ENVOY_LOG(debug, "Filter disabled(response)");
-                status_.request_processed = true;
-                return Http::FilterHeadersStatus::Continue;
-            }
-        }
-    } else { // direct, direct_response
+    if (encoder_route_conig_ && encoder_route_conig_>disable_response()) {
+        ENVOY_LOG(debug, "Filter disabled");
         status_.request_processed = true;
         return Http::FilterHeadersStatus::Continue;
     }
@@ -342,6 +324,11 @@ Http::FilterMetadataStatus ModSecurityFilter::encodeMetadata(Http::MetadataMap&)
 
 void ModSecurityFilter::setEncoderFilterCallbacks(Http::StreamEncoderFilterCallbacks& callbacks) {
     encoder_callbacks_ = &callbacks;
+
+    if (callbacks.route() && callbacks.route().routeEntry()) {
+        encoder_route_conig_.reset(
+            entry->mostSpecificPerFilterConfigTyped<ModSecurityRouteSpecificFilterConfig>(filter_name));
+    }
 }
 
 bool ModSecurityFilter::intervention() {

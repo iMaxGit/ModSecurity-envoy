@@ -31,7 +31,7 @@ namespace HttpFilters {
 namespace ModSecurity {
 
 
-#define MODSEC_FILTER_NAME "envoy.filters.http.modsecurity"
+constexpr char filter_name[] = "envoy.filters.http.modsecurity";
 
 
 #define ALL_MODSEC_STATS(COUNTER)             \
@@ -41,6 +41,19 @@ namespace ModSecurity {
 
 struct ModSecurityStats {
   ALL_MODSEC_STATS(GENERATE_COUNTER_STRUCT)
+};
+
+
+class ModSecurityRouteSpecificFilterConfig : public Router::RouteSpecificFilterConfig {
+public:
+  ModSecurityRouteSpecificFilterConfig(const envoy::extensions::filters::http::modsecurity::v1::PerRouteConfig&);
+
+  bool disable_request() const { return disable_request_; }
+  bool disable_response() const { return disable_response_; }
+
+private:
+  bool disable_request_;
+  bool disable_response_;
 };
 
 
@@ -144,6 +157,8 @@ private:
   Http::StreamDecoderFilterCallbacks* decoder_callbacks_;
   Http::StreamEncoderFilterCallbacks* encoder_callbacks_;
   std::shared_ptr<modsecurity::Transaction> modsec_transaction_;
+  std::shared_ptr<ModSecurityFilterConfig> decoder_route_conig_;
+  std::shared_ptr<ModSecurityFilterConfig> encoder_route_conig_;
   
   void logCb(const modsecurity::RuleMessage * ruleMessage);
   /**

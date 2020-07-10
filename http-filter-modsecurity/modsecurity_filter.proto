@@ -41,3 +41,12 @@ message ModSecurity {
     Webhook webhook = 3;
 
 }
+
+// [#next-free-field: 4]
+message PerRouteConfig {
+    oneof disable_options {
+        bool disable = 1;
+        bool disable_request = 2;
+        bool disable_response = 3;
+    }
+}
