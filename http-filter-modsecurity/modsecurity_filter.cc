@@ -351,7 +351,7 @@ bool ModSecurityFilter::intervention() {
         ENVOY_LOG(debug, "intervention");
         decoder_callbacks_->sendLocalReply(
             static_cast<Http::Code>(modsec_transaction_->m_it.status),
-            modsec_transaction_->m_it.log,
+            "",
             [this](Http::HeaderMap& headers) {
                 if (modsec_transaction_->m_it.status == 302) {
                     headers.addCopy(
