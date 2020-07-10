@@ -349,9 +349,16 @@ bool ModSecurityFilter::intervention() {
         // status_.intervined must be set to true before sendLocalReply to avoid reentrancy when encoding the reply
         status_.intervined = true;
         ENVOY_LOG(debug, "intervention");
-        decoder_callbacks_->sendLocalReply(static_cast<Http::Code>(modsec_transaction_->m_it.status),
-                                           "ModSecurity Action\n",
-                                           [](Http::HeaderMap&) {}, absl::nullopt, "");
+        decoder_callbacks_->sendLocalReply(
+            static_cast<Http::Code>(modsec_transaction_->m_it.status),
+            modsec_transaction_->m_it.log,
+            [this](Http::HeaderMap& headers) {
+                if (modsec_transaction_->m_it.status == 302) {
+                    headers.addCopy(
+                        Http::Headers::get().Location,
+                        modsec_transaction_->m_it.url);
+                }
+            }, absl::nullopt, "");
     }
     return status_.intervined;
 }
