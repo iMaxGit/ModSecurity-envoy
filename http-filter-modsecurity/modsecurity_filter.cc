@@ -265,7 +265,7 @@ bool ModSecurityFilter::responseDisabled() {
     return true;
 }
 
-Http::FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& headers, bool) {
+Http::FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderMap& headers, bool end_stream) {
     ENVOY_LOG(debug, "ModSecurityFilter::encodeHeaders");
     if (status_.intervined || status_.response_processed) {
         ENVOY_LOG(debug, "Processed");
@@ -290,7 +290,10 @@ Http::FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderM
             this);
     modsec_transaction_->processResponseHeaders(response_code, 
             getProtocolString(encoder_callbacks_->streamInfo().protocol().value_or(Http::Protocol::Http11)));
-        
+    
+    if (end_stream) {
+        status_.response_processed = true;
+    }
     if (intervention()) {
         return Http::FilterHeadersStatus::StopIteration;
     }
