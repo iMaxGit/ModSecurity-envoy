@@ -274,7 +274,7 @@ Http::FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderM
 
     if (responseDisabled()) {
         ENVOY_LOG(debug, "Filter disabled");
-        status_.request_processed = true;
+        status_.response_processed = true;
         return Http::FilterHeadersStatus::Continue;
     }
 
