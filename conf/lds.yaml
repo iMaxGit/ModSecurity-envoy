@@ -23,12 +23,12 @@ resources:
                 prefix: "/"
               route:
                 cluster: service1
-              metadata:
-                filter_metadata:
-                  envoy.filters.http.modsecurity:
-                    # disable: true
-                    # disable_request: true
-                    # disable_response: true
+              typed_per_filter_config:
+                envoy.filters.http.modsecurity:
+                  "@type": type.googleapis.com/envoy.extensions.filters.http.modsecurity.v1.PerRouteConfig
+                  # disable: true
+                  # disable_request: true
+                  # disable_response: true
         http_filters:
         # before envoy.router because order matters!
         - name: envoy.filters.http.modsecurity
