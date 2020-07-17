@@ -24,8 +24,8 @@ Http::FilterFactoryCb ModSecurityFilterFactory::createFilterFactoryFromProtoType
 }
 
 Router::RouteSpecificFilterConfigConstSharedPtr
-RoleBasedAccessControlFilterConfigFactory::createRouteSpecificFilterConfigTyped(
-    envoy::extensions::filters::http::modsecurity::v1::PerRouteConfig& proto_config,
+ModSecurityFilterFactory::createRouteSpecificFilterConfigTyped(
+    const envoy::extensions::filters::http::modsecurity::v1::PerRouteConfig& proto_config,
     Server::Configuration::ServerFactoryContext&, ProtobufMessage::ValidationVisitor&) {
   return std::make_shared<const ModSecurityRouteSpecificFilterConfig>(proto_config);
 }

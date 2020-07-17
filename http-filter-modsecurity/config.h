@@ -13,7 +13,8 @@ namespace HttpFilters {
 namespace ModSecurity {
 
 class ModSecurityFilterFactory
-    : public Common::FactoryBase<envoy::extensions::filters::http::modsecurity::v1::ModSecurity> {
+    : public Common::FactoryBase<envoy::extensions::filters::http::modsecurity::v1::ModSecurity,
+                                 envoy::extensions::filters::http::modsecurity::v1::PerRouteConfig> {
 public:
   ModSecurityFilterFactory() : FactoryBase(filter_name) {}
 
@@ -24,7 +25,7 @@ private:
                                     Server::Configuration::FactoryContext& context) override;
 
   Router::RouteSpecificFilterConfigConstSharedPtr createRouteSpecificFilterConfigTyped(
-      envoy::extensions::filters::http::modsecurity::v1::PerRouteConfig& proto_config,
+      const envoy::extensions::filters::http::modsecurity::v1::PerRouteConfig& proto_config,
       Server::Configuration::ServerFactoryContext& context,
       ProtobufMessage::ValidationVisitor& validator) override;
 
