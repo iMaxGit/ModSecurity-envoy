@@ -23,6 +23,11 @@ private:
                                     const std::string& stats_prefix,
                                     Server::Configuration::FactoryContext& context) override;
 
+  Router::RouteSpecificFilterConfigConstSharedPtr createRouteSpecificFilterConfigTyped(
+      envoy::extensions::filters::http::modsecurity::v1::PerRouteConfig& proto_config,
+      Server::Configuration::ServerFactoryContext& context,
+      ProtobufMessage::ValidationVisitor& validator) override;
+
 };
 
 DECLARE_FACTORY(ModSecurityFilterFactory);
