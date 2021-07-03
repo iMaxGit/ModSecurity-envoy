@@ -18,7 +18,7 @@ Http::FilterFactoryCb ModSecurityFilterFactory::createFilterFactoryFromProtoType
   ModSecurityFilterConfigSharedPtr config = std::make_shared<ModSecurityFilterConfig>(
       proto_config, stats_prefix, context);
 
-  return [config, &context](Http::FilterChainFactoryCallbacks& callbacks) -> void {
+  return [config](Http::FilterChainFactoryCallbacks& callbacks) -> void {
     callbacks.addStreamFilter(std::make_shared<ModSecurityFilter>(config));
   };
 }
