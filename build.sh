@@ -105,11 +105,29 @@ case $1 in
 
         echo "Done!"
         ;;
+    release )
+
+        check_modsecurity
+
+        # show version to build
+        echo "Build with envoy $($0 version)"
+
+        gen_workspace
+
+        echo "Start build"
+
+        bazel build //:envoy.stripped -c opt ${@:2} || exit 1
+
+        echo "Done!"
+        ;;
     install )
         if [ ! -f bazel-bin/envoy ]; then
             $0 build || exit 1
         fi
-        install -m 755 -s bazel-bin/envoy /usr/local/bin/envoy
+        (
+            install -m 755 -s bazel-bin/envoy.stripped /usr/local/bin/envoy ||
+            install -m 755 -s bazel-bin/envoy /usr/local/bin/envoy
+        )
         echo "Done!"
         ;;
     help|*)
@@ -120,6 +138,7 @@ case $1 in
         echo "    version            Get current envoy version"
         echo "    set-version <ver>  Set envoy version (git)"
         echo "    build              Start build"
+        echo "    release            Start build release"
         echo "    test               Start test"
         echo "    install            Install envoy to system path"
         echo "    help               This message"
