@@ -11,7 +11,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
       with:
-        fetch-depth: 5
+        submodules: true
     - name: Install deps
       shell: bash
       run: |
