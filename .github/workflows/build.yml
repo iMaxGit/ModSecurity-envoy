@@ -27,8 +27,8 @@ jobs:
         version: "11.0"
     - name: Build
       run: |
-       envoy/bazel/setup_clang.sh ${{ env.LLVM_PATH }}
-       ./build.sh release --config=clang --define tcmalloc=gperftools
+        ./build.sh set-clang ${{ env.LLVM_PATH }}
+        ./build.sh release --config=clang --define tcmalloc=gperftools
     - uses: actions/upload-artifact@v2
       with:
         name: envoy-binary

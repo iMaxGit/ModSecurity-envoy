@@ -77,6 +77,9 @@ case $1 in
             exit 1
         fi
         ;;
+    set-clang )
+        gen_workspace
+        ./envoy/bazel/setup_clang.sh $2
     test )
         check_modsecurity
 
