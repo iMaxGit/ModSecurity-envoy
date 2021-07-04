@@ -162,8 +162,7 @@ Http::FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMa
         return Http::FilterHeadersStatus::Continue;
     }
 
-    auto downstreamAddress = decoder_callbacks_->streamInfo().downstreamAddressProvider().localAddress();
-    // TODO - Upstream is (always?) still not resolved in this stage. Use our local proxy's ip. Is this what we want?
+    auto downstreamAddress = decoder_callbacks_->streamInfo().downstreamAddressProvider().remoteAddress();
     ASSERT(decoder_callbacks_->connection() != nullptr);
     auto localAddress = decoder_callbacks_->connection()->addressProvider().localAddress();
     // According to documentation, downstreamAddress should never be nullptr
