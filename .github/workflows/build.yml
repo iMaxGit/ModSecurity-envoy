@@ -20,11 +20,18 @@ jobs:
           C:/Program Files/LLVM
           ./llvm
         key: llvm-11.0
+    - name: Cache ModSecurity
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: ./modsec-src
+        key: modsec-v3
     - name: Install deps
       shell: bash
       run: |
        sudo apt-get update --error-on=any
-       sudo apt-get install --yes libtool cmake automake autoconf make ninja-build curl unzip virtualenv openjdk-11-jdk build-essential libc++1 libmodsecurity-dev pkg-config
+       sudo apt-get install --yes libtool cmake automake autoconf make ninja-build curl unzip virtualenv openjdk-11-jdk build-essential libc++1 \
+        pkg-config flex bison libcurl4-gnutls-dev libfuzzy-dev libgeoip-dev liblua5.3-dev libmaxminddb-dev libpcre3-dev libxml2-dev libyajl-dev
     - name: Setup bazel
       uses: jwlawson/actions-setup-bazel@v1
       with:
@@ -34,7 +41,20 @@ jobs:
       with:
         version: "11.0"
         cached: ${{ steps.cache-llvm.outputs.cache-hit }}
-    - name: Build
+    - name: Build ModSecurity
+      run: |
+        git clone --recursive https://github.com/SpiderLabs/ModSecurity.git -b v3/master modsec-src
+        cd modsec-src
+        ./build.sh
+        ./configure
+        make
+        cd ..
+    - name: Install ModSecurity
+      run: |
+        cd modsec-src
+        sudo make install
+        cd ..
+    - name: Build envoy
       run: |
         ./build.sh set-clang ${{ env.LLVM_PATH }}
         ./build.sh release --config=clang --define tcmalloc=gperftools

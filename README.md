@@ -26,8 +26,8 @@ git submodule update --init
 ModSecurity dependencies:
 
 ```bash
-sudo apt-get install -y libtool automake pkg-config make
-sudo apt-get install -y g++ flex bison curl doxygen libyajl-dev libgeoip-dev dh-autoreconf libcurl4-gnutls-dev libxml2 libpcre++-dev libxml2-dev
+sudo apt-get install -y libtool automake pkg-config make g++ gcc
+sudo apt-get install -y flex bison libcurl4-gnutls-dev libfuzzy-dev libgeoip-dev liblua5.3-dev libmaxminddb-dev libpcre3-dev libxml2-dev libyajl-dev
 ```
 
 For more details on how to compile ModSecurity read ModSecurity's [documentation](https://github.com/SpiderLabs/ModSecurity#compilation).
