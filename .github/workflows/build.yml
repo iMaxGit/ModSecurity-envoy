@@ -21,6 +21,7 @@ jobs:
           ./llvm
         key: llvm-11.0
     - name: Cache ModSecurity
+      id: cache-modsec
       uses: actions/cache@v2
       with:
         path: ./modsec-src
@@ -41,6 +42,7 @@ jobs:
         version: "11.0"
         cached: ${{ steps.cache-llvm.outputs.cache-hit }}
     - name: Build ModSecurity
+      if: steps.cache-modsec.outputs.cache-hit != 'true'
       run: |
         git clone --recursive https://github.com/SpiderLabs/ModSecurity.git -b v3/master modsec-src
         cd modsec-src
