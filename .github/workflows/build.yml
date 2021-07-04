@@ -21,7 +21,6 @@ jobs:
           ./llvm
         key: llvm-11.0
     - name: Cache ModSecurity
-      id: cache-llvm
       uses: actions/cache@v2
       with:
         path: ./modsec-src
