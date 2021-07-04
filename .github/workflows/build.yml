@@ -1,0 +1,31 @@
+on: push
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 5
+    - name: Install deps
+      shell: bash
+      run: |
+       sudo apt-get update --error-on=any
+       sudo apt-get install --yes libtool cmake automake autoconf make ninja-build curl unzip virtualenv openjdk-11-jdk build-essential libc++1
+       mkdir -p bin/clang11
+       cd bin/clang11
+       wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/clang+llvm-11.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+       tar -xf clang+llvm-11.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz --strip-components 1
+       export PATH=bin/clang11/bin:$PATH
+    - name: Build
+      run: |
+       envoy/bazel/setup_clang.sh bin/clang11
+       bazelisk shutdown
+       ./build.sh build --config=clang --define tcmalloc=gperftools --strip=always
+    - uses: actions/upload-artifact@v2
+      with:
+        name: envoy-binary
+        path: bazel-bin/envoy
