@@ -80,6 +80,7 @@ case $1 in
     set-clang )
         gen_workspace
         ./envoy/bazel/setup_clang.sh $2
+        ;;
     test )
         check_modsecurity
 
