@@ -35,7 +35,7 @@ std::string getRuleMessageAsJsonString(const modsecurity::RuleMessage* ruleMessa
         tag_array.push_back(ValueUtil::stringValue(tag));
     }
     (*document_fields)["tags"] = ValueUtil::listValue(tag_array);
-    return MessageUtil::getJsonStringFromMessage(document);
+    return MessageUtil::getJsonStringFromMessageOrError(document);
 }
 
 } // namespace ModSecurity

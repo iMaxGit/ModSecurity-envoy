@@ -162,10 +162,10 @@ Http::FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMa
         return Http::FilterHeadersStatus::Continue;
     }
 
-    auto downstreamAddress = decoder_callbacks_->streamInfo().downstreamLocalAddress();
+    auto downstreamAddress = decoder_callbacks_->streamInfo().downstreamAddressProvider().localAddress();
     // TODO - Upstream is (always?) still not resolved in this stage. Use our local proxy's ip. Is this what we want?
     ASSERT(decoder_callbacks_->connection() != nullptr);
-    auto localAddress = decoder_callbacks_->connection()->localAddress();
+    auto localAddress = decoder_callbacks_->connection()->addressProvider().localAddress();
     // According to documentation, downstreamAddress should never be nullptr
     ASSERT(downstreamAddress != nullptr);
     ASSERT(downstreamAddress->type() == Network::Address::Type::Ip);
@@ -189,20 +189,19 @@ Http::FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMa
     }
     
     headers.iterate(
-            [](const Http::HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
-                
-                std::string k = std::string(header.key().getStringView());
-                std::string v = std::string(header.value().getStringView());
-                static_cast<ModSecurityFilter*>(context)->modsec_transaction_->addRequestHeader(k.c_str(), v.c_str());
-                // TODO - does this special case makes sense? it doesn't exist on apache/nginx modsecurity bridges.
-                // host header is cannonized to :authority even on http older than 2 
-                // see https://github.com/envoyproxy/envoy/issues/2209
-                if (k == Http::Headers::get().Host.get()) {
-                    static_cast<ModSecurityFilter*>(context)->modsec_transaction_->addRequestHeader(Http::Headers::get().HostLegacy.get().c_str(), v.c_str());
-                }
-                return Http::HeaderMap::Iterate::Continue;
-            },
-            this);
+        [this](const Http::HeaderEntry& header) -> Http::HeaderMap::Iterate {
+            
+            std::string k = std::string(header.key().getStringView());
+            std::string v = std::string(header.value().getStringView());
+            this->modsec_transaction_->addRequestHeader(k.c_str(), v.c_str());
+            // TODO - does this special case makes sense? it doesn't exist on apache/nginx modsecurity bridges.
+            // host header is cannonized to :authority even on http older than 2 
+            // see https://github.com/envoyproxy/envoy/issues/2209
+            if (k == Http::Headers::get().Host.get()) {
+                this->modsec_transaction_->addRequestHeader(Http::Headers::get().HostLegacy.get().c_str(), v.c_str());
+            }
+            return Http::HeaderMap::Iterate::Continue;
+        });
     modsec_transaction_->processRequestHeaders();
     if (end_stream) {
         status_.request_processed = true;
@@ -280,14 +279,13 @@ Http::FilterHeadersStatus ModSecurityFilter::encodeHeaders(Http::ResponseHeaderM
 
     uint64_t response_code = Http::Utility::getResponseStatus(headers);
     headers.iterate(
-            [](const Http::HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
-                static_cast<ModSecurityFilter*>(context)->modsec_transaction_->addResponseHeader(
-                    std::string(header.key().getStringView()).c_str(),
-                    std::string(header.value().getStringView()).c_str()
-                );
-                return Http::HeaderMap::Iterate::Continue;
-            },
-            this);
+        [this](const Http::HeaderEntry& header) -> Http::HeaderMap::Iterate {
+            this->modsec_transaction_->addResponseHeader(
+                std::string(header.key().getStringView()).c_str(),
+                std::string(header.value().getStringView()).c_str()
+            );
+            return Http::HeaderMap::Iterate::Continue;
+        });
     modsec_transaction_->processResponseHeaders(response_code, 
             getProtocolString(encoder_callbacks_->streamInfo().protocol().value_or(Http::Protocol::Http11)));
     

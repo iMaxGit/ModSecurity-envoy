@@ -22,7 +22,7 @@ WebhookFetcher::WebhookFetcher(Upstream::ClusterManager& cm,
 WebhookFetcher::~WebhookFetcher() {}
 
 void WebhookFetcher::invoke(const std::string& body) {
-  if (!cm_.get(uri_.cluster())) {
+  if (!cm_.getThreadLocalCluster(uri_.cluster())) {
     ENVOY_LOG(error, "Webhook can't be invoked. cluster '{}' not found", uri_.cluster());
     return;
   }
@@ -31,7 +31,7 @@ void WebhookFetcher::invoke(const std::string& body) {
   message->headers().setReferenceMethod(Http::Headers::get().MethodValues.Post);
   message->headers().setReferenceContentType(Http::Headers::get().ContentTypeValues.Json);
   message->headers().setContentLength(body.size());
-  message->body() = std::make_unique<Buffer::OwnedImpl>(body);
+  message->body().add(body);
   if (secret_.size()) {
     auto& crypto_util = Envoy::Common::Crypto::UtilitySingleton::get();
     // Add digest to headers
@@ -40,10 +40,12 @@ void WebhookFetcher::invoke(const std::string& body) {
   }
 
   ENVOY_LOG(debug, "Webhook [uri = {}]: start", uri_.uri());
-  cm_.httpAsyncClientForCluster(uri_.cluster())
-         .send(std::move(message), *this,
-               Http::AsyncClient::RequestOptions().setTimeout(std::chrono::milliseconds(
-                   DurationUtil::durationToMilliseconds(uri_.timeout()))));
+  const auto thread_local_cluster = cm_.getThreadLocalCluster(uri_.cluster());
+  if (thread_local_cluster != nullptr) {
+    thread_local_cluster->httpAsyncClient().send(
+      std::move(message), *this,
+      Http::AsyncClient::RequestOptions().setTimeout(
+        std::chrono::milliseconds(DurationUtil::durationToMilliseconds(uri_.timeout()))));
 }
 
 void WebhookFetcher::onSuccess(const Http::AsyncClient::Request&,
