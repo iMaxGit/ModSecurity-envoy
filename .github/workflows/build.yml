@@ -24,7 +24,7 @@ jobs:
       shell: bash
       run: |
        sudo apt-get update --error-on=any
-       sudo apt-get install --yes libtool cmake automake autoconf make ninja-build curl unzip virtualenv openjdk-11-jdk build-essential libc++1
+       sudo apt-get install --yes libtool cmake automake autoconf make ninja-build curl unzip virtualenv openjdk-11-jdk build-essential libc++1 libmodsecurity-dev pkg-config
     - name: Setup bazel
       uses: jwlawson/actions-setup-bazel@v1
       with:
