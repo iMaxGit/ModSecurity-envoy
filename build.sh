@@ -46,7 +46,7 @@ EOL
 if [ ! -f envoy/VERSION ]; then
     if [ -d .git ]; then
         echo "Downloading submodule"
-        git suubmoduule update --init
+        git submodule update --init
         echo "Done"
     else
         echo "Please download envoy source"
