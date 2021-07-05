@@ -46,6 +46,7 @@ void WebhookFetcher::invoke(const std::string& body) {
       std::move(message), *this,
       Http::AsyncClient::RequestOptions().setTimeout(
         std::chrono::milliseconds(DurationUtil::durationToMilliseconds(uri_.timeout()))));
+  }
 }
 
 void WebhookFetcher::onSuccess(const Http::AsyncClient::Request&,
