@@ -64,8 +64,8 @@ jobs:
       run: |
         ./build.sh set-clang ${{ env.LLVM_PATH }}
         ./build.sh release --config=clang --define tcmalloc=gperftools
-        tar czvf binaries.tgz bazel-bin/envoy bazel-bin/envoy.stripped
+        zip binaries.zip bazel-bin/envoy bazel-bin/envoy.stripped
     - uses: actions/upload-artifact@v2
       with:
         name: envoy-binary
-        path: binaries.tgz
+        path: binaries.zip
