@@ -65,3 +65,4 @@ jobs:
         path: |
           bazel-bin/envoy
           bazel-bin/envoy.stripped
+          !bazel-bin?*
