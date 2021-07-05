@@ -64,10 +64,10 @@ jobs:
       run: |
         ./build.sh set-clang ${{ env.LLVM_PATH }}
         ./build.sh release --config=clang --define tcmalloc=gperftools
-    - uses: actions/upload-artifact@v2
-      with:
-        name: envoy-binary
-        path: |
-          bazel-bin/envoy
-          bazel-bin/envoy.stripped
-          !bazel-bin?*
+    # - uses: actions/upload-artifact@v2
+    #   with:
+    #     name: envoy-binary
+    #     path: |
+    #       bazel-bin/envoy
+    #       bazel-bin/envoy.stripped
+    #       !bazel-bin?*
