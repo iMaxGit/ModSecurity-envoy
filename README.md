@@ -48,11 +48,6 @@ To change envoy version
 
 For more information on envoy's building system read Envoy's [documentation](https://github.com/envoyproxy/envoy).
 
-### Using the docker images
-
-You can build docker images for envoy-build and envoy
-See [ci/README.md](ci/README.md)
-
 ## Configuration
 
 ModSecurity-Envoy Filter accept the configuration defined in [http_filter.proto](./http-filter-modsecurity/http_filter.proto)
@@ -102,13 +97,12 @@ The configuration for the filter is provided under the http_filters:
 
 CRS is a set of generic attack
 detection rules for use with ModSecurity and aims to protect web applications
-from wide range of attacks. For more information check out [https://modsecurity.org/crs/](https://modsecurity.org/crs/)
+from wide range of attacks. For more information check out [https://coreruleset.org/](https://coreruleset.org/)
 
 Download and extract the latest rules to the directory.
 
 ```bash
-wget https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v3.1.1.tar.gz
-tar xvzf v3.1.1.tar.gz
+curl -sL https://github.com/coreruleset/coreruleset/archive/refs/tags/v3.3.2.tar.gz | tar xvz
 ```
 
 The configuration examples include the relevant OWASP rules.
@@ -129,7 +123,7 @@ docker run -p 5555:80 kennethreitz/httpbin
 Now let's run the envoy
 
 ```bash
-sudo ./bazel-bin/envoy-static -c conf/envoy-modsecurity-example-lds.yaml -l info
+sudo ./bazel-bin/envoy -c conf/envoy-modsecurity-example-lds.yaml -l info
 ```
 
 Make our first request
