@@ -20,12 +20,17 @@ jobs:
           C:/Program Files/LLVM
           ./llvm
         key: llvm-11.0
-    - name: Cache ModSecurity
+    - name: ModSecurity Cache
       id: cache-modsec
       uses: actions/cache@v2
       with:
         path: ./modsec-src
         key: modsec-v3
+    - name: Bazel cache
+      uses: actions/cache@v2
+      with:
+        path: "/home/runner/.cache/bazel"
+        key: bazel
     - name: Install deps
       shell: bash
       run: |
