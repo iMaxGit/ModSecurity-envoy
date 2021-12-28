@@ -37,11 +37,13 @@ envoy_cc_library(
     deps = [
         ":pkg_cc_proto",
         ":webhook_fetch_lib",
-        "@envoy//include/envoy/upstream:cluster_manager_interface",
+        #"@envoy//include/envoy/upstream:cluster_manager_interface", # v1.18
+        "@envoy//envoy/upstream:cluster_manager_interface", # v1.20
         "@envoy//source/common/http:utility_lib",
         "@envoy_api//envoy/config/core/v3:pkg_cc_proto",
         "@modsecurity//:lib",
         "@envoy//source/exe:envoy_common_lib",
+	"@envoy//envoy/http:filter_interface",
     ],
 )
 
@@ -49,15 +51,14 @@ envoy_cc_extension(
     name = "config",
     srcs = ["config.cc"],
     hdrs = ["config.h"],
-    category = "envoy.filters.http",
-    security_posture = "unknown",
+    #category = "envoy.filters.http", # v1.18
+    #security_posture = "unknown", # v1.18
     repository = "@envoy",
     deps = [
         ":modsecurity_filter_lib",
-        "@envoy//include/envoy/registry",
+        #"@envoy//include/envoy/registry", # v1.18
+        "@envoy//envoy/registry",
         "@envoy//source/common/protobuf:utility_lib",
-        "@envoy//include/envoy/network:filter_interface",
-        "@envoy//include/envoy/server:filter_config_interface",
         "@envoy//source/extensions/filters/http/common:factory_base_lib",
     ],
     visibility = ["//visibility:public"],
