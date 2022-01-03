@@ -1,6 +1,13 @@
 #include "utility.h"
+
+/* v1.18
 #include "common/protobuf/protobuf.h"
 #include "common/protobuf/utility.h"
+*/
+
+/* v1.20 */
+#include "source/common/protobuf/protobuf.h"
+#include "source/common/protobuf/utility.h"
 
 namespace Envoy {
 namespace Extensions {

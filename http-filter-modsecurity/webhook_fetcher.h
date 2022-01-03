@@ -4,7 +4,12 @@
 
 #include "envoy/common/pure.h"
 #include "envoy/upstream/cluster_manager.h"
+/* v1.18
 #include "common/common/logger.h"
+*/
+
+/* v1.20 */
+#include "source/common/common/logger.h"
 
 #include "envoy/config/core/v3/http_uri.pb.h"
 
