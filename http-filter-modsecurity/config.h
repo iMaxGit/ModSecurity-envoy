@@ -5,7 +5,8 @@
 #include "http-filter-modsecurity/modsecurity_filter.pb.h"
 #include "http-filter-modsecurity/modsecurity_filter.pb.validate.h"
 
-#include "extensions/filters/http/common/factory_base.h"
+// #include "extensions/filters/http/common/factory_base.h" // v1.18
+#include "source/extensions/filters/http/common/factory_base.h" // v1.20
 
 namespace Envoy {
 namespace Extensions {

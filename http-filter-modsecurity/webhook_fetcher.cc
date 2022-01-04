@@ -1,5 +1,6 @@
 #include "webhook_fetcher.h"
 
+/* v1.18
 #include "common/buffer/buffer_impl.h"
 #include "common/common/enum_to_int.h"
 #include "common/common/hex.h"
@@ -7,6 +8,15 @@
 #include "common/http/headers.h"
 #include "common/http/utility.h"
 #include "common/crypto/utility.h"
+*/
+
+/* v1.20 */
+#include "source/common/buffer/buffer_impl.h"
+#include "source/common/common/enum_to_int.h"
+#include "source/common/common/hex.h"
+#include "source/common/http/headers.h"
+#include "source/common/http/utility.h"
+#include "source/common/crypto/utility.h"
 
 namespace Envoy {
 namespace Extensions {

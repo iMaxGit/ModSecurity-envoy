@@ -9,11 +9,20 @@
 
 #include "envoy/server/filter_config.h"
 
-#include "common/common/macros.h"
+/* v1.18
+#include "common/common/macros.h" 
 
 #include "common/config/metadata.h"
 #include "common/http/utility.h"
 #include "common/http/headers.h"
+*/
+
+/* v.1.20 */
+#include "source/common/common/macros.h"
+
+#include "source/common/config/metadata.h"
+#include "source/common/http/utility.h"
+#include "source/common/http/headers.h"
 
 #include "absl/container/fixed_array.h"
 
@@ -140,10 +149,15 @@ const char* getProtocolString(const Http::Protocol protocol) {
 
 bool ModSecurityFilter::requestDisabled() {
     const auto route = decoder_callbacks_->route();
+    /* v1.18
     if (route && route->routeEntry()) {
         const auto* entry = route->routeEntry();
         const auto* route_local =
             entry->mostSpecificPerFilterConfigTyped<ModSecurityRouteSpecificFilterConfig>(filter_name);
+        return route_local && route_local->disable_request();
+    }*/
+    if (route){ // v1.20
+        const auto* route_local = dynamic_cast<const ModSecurityRouteSpecificFilterConfig*>(route->mostSpecificPerFilterConfig(filter_name));
         return route_local && route_local->disable_request();
     }
     return true;
@@ -164,7 +178,8 @@ Http::FilterHeadersStatus ModSecurityFilter::decodeHeaders(Http::RequestHeaderMa
 
     auto downstreamAddress = decoder_callbacks_->streamInfo().downstreamAddressProvider().remoteAddress();
     ASSERT(decoder_callbacks_->connection() != nullptr);
-    auto localAddress = decoder_callbacks_->connection()->addressProvider().localAddress();
+    // auto localAddress = decoder_callbacks_->connection()->addressProvider().localAddress(); // v1.18
+    auto localAddress = decoder_callbacks_->connection()->connectionInfoProvider().localAddress(); // v1.20
     // According to documentation, downstreamAddress should never be nullptr
     ASSERT(downstreamAddress != nullptr);
     ASSERT(downstreamAddress->type() == Network::Address::Type::Ip);
@@ -254,12 +269,18 @@ void ModSecurityFilter::setDecoderFilterCallbacks(Http::StreamDecoderFilterCallb
 
 bool ModSecurityFilter::responseDisabled() {
     const auto route = encoder_callbacks_->route();
+    /* v1.18
     if (route && route->routeEntry()) {
         const auto* entry = route->routeEntry();
         const auto* route_local =
             entry->mostSpecificPerFilterConfigTyped<ModSecurityRouteSpecificFilterConfig>(filter_name);
         return route_local && route_local->disable_response();
     }
+    */
+    if (route) { // v1.20
+        const auto* route_local = dynamic_cast<const ModSecurityRouteSpecificFilterConfig*>(route->mostSpecificPerFilterConfig(filter_name));
+        return route_local && route_local->disable_response();
+     }
     return true;
 }
 

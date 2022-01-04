@@ -2,8 +2,14 @@
 
 #include <string>
 
+/* v 1.18
 #include "common/common/logger.h"
 #include "common/http/header_map_impl.h"
+*/
+
+/* v1.20 */
+#include "source/common/common/logger.h"
+#include "source/common/http/header_map_impl.h"
 
 #include "envoy/thread_local/thread_local.h"
 #include "envoy/http/filter.h"
@@ -15,8 +21,14 @@
 
 #include "envoy/server/filter_config.h"
 
+/* v1.18
 #include "common/buffer/buffer_impl.h"
 #include "common/protobuf/protobuf.h"
+*/
+
+/* v1.20 */
+#include "source/common/buffer/buffer_impl.h"
+#include "source/common/protobuf/protobuf.h"
 
 #include "webhook_fetcher.h"
 
