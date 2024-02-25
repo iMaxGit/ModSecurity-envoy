@@ -37,166 +37,171 @@
 #include "modsecurity/modsecurity.h"
 #include "modsecurity/rules_set.h"
 
-namespace Envoy {
-namespace Extensions {
-namespace HttpFilters {
-namespace ModSecurity {
+namespace Envoy
+{
+  namespace Extensions
+  {
+    namespace HttpFilters
+    {
+      namespace ModSecurity
+      {
 
+        constexpr char filter_name[] = "envoy.filters.http.modsecurity";
 
-constexpr char filter_name[] = "envoy.filters.http.modsecurity";
-
-
-#define ALL_MODSEC_STATS(COUNTER)             \
-  COUNTER(request_processed)                  \
+#define ALL_MODSEC_STATS(COUNTER) \
+  COUNTER(request_processed)      \
   COUNTER(response_processed)
 
+        struct ModSecurityStats
+        {
+          ALL_MODSEC_STATS(GENERATE_COUNTER_STRUCT)
+        };
 
-struct ModSecurityStats {
-  ALL_MODSEC_STATS(GENERATE_COUNTER_STRUCT)
-};
+        class ModSecurityRouteSpecificFilterConfig : public Router::RouteSpecificFilterConfig
+        {
+        public:
+          ModSecurityRouteSpecificFilterConfig(const envoy::extensions::filters::http::modsecurity::v1::PerRouteConfig &);
 
+          bool disable_request() const { return disable_request_; }
+          bool disable_response() const { return disable_response_; }
 
-class ModSecurityRouteSpecificFilterConfig : public Router::RouteSpecificFilterConfig {
-public:
-  ModSecurityRouteSpecificFilterConfig(const envoy::extensions::filters::http::modsecurity::v1::PerRouteConfig&);
+        private:
+          const bool disable_request_;
+          const bool disable_response_;
+        };
 
-  bool disable_request() const { return disable_request_; }
-  bool disable_response() const { return disable_response_; }
+        class ModSecurityFilterConfig : public Logger::Loggable<Logger::Id::filter>,
+                                        public WebhookFetcherCallback
+        {
+        public:
+          ModSecurityFilterConfig(const envoy::extensions::filters::http::modsecurity::v1::ModSecurity &proto_config,
+                                  const std::string &stats_prefix,
+                                  Server::Configuration::FactoryContext &);
+          ~ModSecurityFilterConfig();
 
-private:
-  const bool disable_request_;
-  const bool disable_response_;
-};
+          Runtime::Loader &runtime() { return runtime_; }
+          ModSecurityStats &stats() { return stats_; }
 
+          // get config
+          const std::string &rules_path() const { return rules_path_; }
+          const std::string &rules_inline() const { return rules_inline_; }
+          const envoy::extensions::filters::http::modsecurity::v1::ModSecurity::Webhook &webhook() const { return webhook_; }
 
-class ModSecurityFilterConfig : public Logger::Loggable<Logger::Id::filter>,
-                                public WebhookFetcherCallback {
-public:
-  ModSecurityFilterConfig(const envoy::extensions::filters::http::modsecurity::v1::ModSecurity& proto_config,
-                          const std::string& stats_prefix,
-                          Server::Configuration::FactoryContext&);
-  ~ModSecurityFilterConfig();
+          std::shared_ptr<modsecurity::ModSecurity> modsec() const { return modsec_; }
+          std::shared_ptr<modsecurity::RulesSet> modsec_rules() const { return modsec_rules_; }
 
-  Runtime::Loader& runtime() { return runtime_; }
-  ModSecurityStats& stats() { return stats_; }
+          void invoke_webhook(const modsecurity::RuleMessage *);
 
-  // get config
-  const std::string& rules_path() const { return rules_path_; }
-  const std::string& rules_inline() const { return rules_inline_; }
-  const envoy::extensions::filters::http::modsecurity::v1::ModSecurity::Webhook& webhook() const { return webhook_; }
+          // Webhook Callbacks
+          void onSuccess(const Http::ResponseMessagePtr &response) override;
+          void onFailure(FailureReason reason) override;
 
-  std::shared_ptr<modsecurity::ModSecurity> modsec() const { return modsec_; }
-  std::shared_ptr<modsecurity::RulesSet> modsec_rules() const { return modsec_rules_; }
+        private:
+          static ModSecurityStats generateStats(const std::string &prefix, Stats::Scope &scope)
+          {
+            return ModSecurityStats{ALL_MODSEC_STATS(POOL_COUNTER_PREFIX(scope, prefix))};
+          }
 
-  void invoke_webhook(const modsecurity::RuleMessage*);
+          struct ThreadLocalWebhook : public ThreadLocal::ThreadLocalObject
+          {
+            ThreadLocalWebhook(WebhookFetcher *webhook_fetcher) : webhook_fetcher_(webhook_fetcher) {}
+            WebhookFetcherSharedPtr webhook_fetcher_;
+          };
 
-  // Webhook Callbacks
-  void onSuccess(const Http::ResponseMessagePtr& response) override;
-  void onFailure(FailureReason reason) override;
+          // config data
+          const std::string rules_path_;
+          const std::string rules_inline_;
+          const envoy::extensions::filters::http::modsecurity::v1::ModSecurity::Webhook webhook_;
+          ThreadLocal::SlotPtr tls_;
 
-private:
-  static ModSecurityStats generateStats(const std::string& prefix, Stats::Scope& scope) {
-    return ModSecurityStats{ALL_MODSEC_STATS(POOL_COUNTER_PREFIX(scope, prefix))};
-  }
+          ModSecurityStats stats_;
+          Runtime::Loader &runtime_;
 
-  struct ThreadLocalWebhook : public ThreadLocal::ThreadLocalObject {
-    ThreadLocalWebhook(WebhookFetcher* webhook_fetcher) : webhook_fetcher_(webhook_fetcher) {}
-    WebhookFetcherSharedPtr webhook_fetcher_;
-  };
+          // share modsecurity obj
+          std::shared_ptr<modsecurity::ModSecurity> modsec_;
+          std::shared_ptr<modsecurity::RulesSet> modsec_rules_;
+        };
 
-  // config data
-  const std::string rules_path_;
-  const std::string rules_inline_;
-  const envoy::extensions::filters::http::modsecurity::v1::ModSecurity::Webhook webhook_;
-  ThreadLocal::SlotPtr tls_;
+        typedef std::shared_ptr<ModSecurityFilterConfig> ModSecurityFilterConfigSharedPtr;
 
-  ModSecurityStats stats_;
-  Runtime::Loader& runtime_;
+        /**
+         * Transaction flow:
+         * 1. Disruptive?
+         *   a. StopIterationAndBuffer until finished processing request
+         *      a1. Should block? sendLocalReply
+         *           decode should return StopIteration to avoid sending data to upstream.
+         *           encode should return Continue to let local reply flow back to downstream.
+         *      a2. Request is valid
+         *           decode should return Continue to let request flow upstream.
+         *           encode should return StopIterationAndBuffer until finished processing response
+         *               a2a. Should block? goto a1.
+         *               a2b. Response is valid, return Continue
+         *
+         * 2. Non-disruptive - always return Continue
+         *
+         */
+        class ModSecurityFilter : public Http::StreamFilter,
+                                  public Logger::Loggable<Logger::Id::filter>
+        {
+        public:
+          /**
+           * This static function will be called by modsecurity and internally invoke logCb filter's method
+           */
+          static void _logCb(void *data, const void *ruleMessagev);
 
-  // share modsecurity obj
-  std::shared_ptr<modsecurity::ModSecurity> modsec_;
-  std::shared_ptr<modsecurity::RulesSet> modsec_rules_;
-};
+          ModSecurityFilter(ModSecurityFilterConfigSharedPtr);
+          ~ModSecurityFilter();
 
-typedef std::shared_ptr<ModSecurityFilterConfig> ModSecurityFilterConfigSharedPtr;
+          // Http::StreamFilterBase
+          void onDestroy() override;
 
-/**
- * Transaction flow:
- * 1. Disruptive?
- *   a. StopIterationAndBuffer until finished processing request
- *      a1. Should block? sendLocalReply
- *           decode should return StopIteration to avoid sending data to upstream.
- *           encode should return Continue to let local reply flow back to downstream.
- *      a2. Request is valid
- *           decode should return Continue to let request flow upstream.
- *           encode should return StopIterationAndBuffer until finished processing response
- *               a2a. Should block? goto a1.
- *               a2b. Response is valid, return Continue
- * 
- * 2. Non-disruptive - always return Continue
- *   
- */
-class ModSecurityFilter : public Http::StreamFilter,
-                          public Logger::Loggable<Logger::Id::filter> {
-public:
-  /**
-   * This static function will be called by modsecurity and internally invoke logCb filter's method
-   */
-  static void _logCb(void* data, const void* ruleMessagev);
+          // Http::StreamDecoderFilter
+          Http::FilterHeadersStatus decodeHeaders(Http::RequestHeaderMap &, bool end_stream) override;
+          Http::FilterDataStatus decodeData(Buffer::Instance &, bool end_stream) override;
+          Http::FilterTrailersStatus decodeTrailers(Http::RequestTrailerMap &) override;
+          void setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks &) override;
 
-    ModSecurityFilter(ModSecurityFilterConfigSharedPtr);
-  ~ModSecurityFilter();
+          // Http::StreamEncoderFilter
+          Http::Filter1xxHeadersStatus encode1xxHeaders(Http::ResponseHeaderMap &headers) override;
+          Http::FilterHeadersStatus encodeHeaders(Http::ResponseHeaderMap &, bool end_stream) override;
+          Http::FilterDataStatus encodeData(Buffer::Instance &, bool end_stream) override;
+          Http::FilterTrailersStatus encodeTrailers(Http::ResponseTrailerMap &) override;
+          void setEncoderFilterCallbacks(Http::StreamEncoderFilterCallbacks &) override;
+          Http::FilterMetadataStatus encodeMetadata(Http::MetadataMap &metadata_map) override;
 
-  // Http::StreamFilterBase
-  void onDestroy() override;
+        private:
+          const ModSecurityFilterConfigSharedPtr config_;
+          Http::StreamDecoderFilterCallbacks *decoder_callbacks_;
+          Http::StreamEncoderFilterCallbacks *encoder_callbacks_;
+          std::shared_ptr<modsecurity::Transaction> modsec_transaction_;
 
-  // Http::StreamDecoderFilter
-  Http::FilterHeadersStatus decodeHeaders(Http::RequestHeaderMap&, bool end_stream) override;
-  Http::FilterDataStatus decodeData(Buffer::Instance&, bool end_stream) override;
-  Http::FilterTrailersStatus decodeTrailers(Http::RequestTrailerMap&) override;
-  void setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks&) override;
+          void logCb(const modsecurity::RuleMessage *ruleMessage);
 
-  // Http::StreamEncoderFilter
-  Http::FilterHeadersStatus encode100ContinueHeaders(Http::ResponseHeaderMap& headers) override;
-  Http::FilterHeadersStatus encodeHeaders(Http::ResponseHeaderMap&, bool end_stream) override;
-  Http::FilterDataStatus encodeData(Buffer::Instance&, bool end_stream) override;
-  Http::FilterTrailersStatus encodeTrailers(Http::ResponseTrailerMap&) override;
-  void setEncoderFilterCallbacks(Http::StreamEncoderFilterCallbacks&) override;
-  Http::FilterMetadataStatus encodeMetadata(Http::MetadataMap& metadata_map) override;
+          bool requestDisabled();
+          bool responseDisabled();
+          /**
+           * @return true if intervention of current transaction is disruptive, false otherwise
+           */
+          bool intervention();
 
-private:
-  const ModSecurityFilterConfigSharedPtr config_;
-  Http::StreamDecoderFilterCallbacks* decoder_callbacks_;
-  Http::StreamEncoderFilterCallbacks* encoder_callbacks_;
-  std::shared_ptr<modsecurity::Transaction> modsec_transaction_;
-  
-  void logCb(const modsecurity::RuleMessage * ruleMessage);
+          Http::FilterHeadersStatus getRequestHeadersStatus();
+          Http::FilterDataStatus getRequestStatus();
 
-  bool requestDisabled();
-  bool responseDisabled();
-  /**
-   * @return true if intervention of current transaction is disruptive, false otherwise
-   */
-  bool intervention();
+          Http::FilterHeadersStatus getResponseHeadersStatus();
+          Http::FilterDataStatus getResponseStatus();
 
-  Http::FilterHeadersStatus getRequestHeadersStatus();
-  Http::FilterDataStatus getRequestStatus();
+          struct ModSecurityStatus
+          {
+            ModSecurityStatus() : intervined(0), request_processed(0), response_processed(0) {}
+            bool intervined;
+            bool request_processed;
+            bool response_processed;
+          };
 
-  Http::FilterHeadersStatus getResponseHeadersStatus();
-  Http::FilterDataStatus getResponseStatus();
+          ModSecurityStatus status_;
+        };
 
-  struct ModSecurityStatus {
-    ModSecurityStatus() : intervined(0), request_processed(0), response_processed(0) {}
-    bool intervined;
-    bool request_processed;
-    bool response_processed;
-  };
-
-  ModSecurityStatus status_;
-};
-
-
-} // namespace ModSecurity
-} // namespace HttpFilters
-} // namespace Extensions
+      } // namespace ModSecurity
+    }   // namespace HttpFilters
+  }     // namespace Extensions
 } // namespace Envoy
