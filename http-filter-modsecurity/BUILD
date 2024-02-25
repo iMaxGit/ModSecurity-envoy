@@ -25,7 +25,7 @@ envoy_cc_library(
     repository = "@envoy",
     deps = [
         "@envoy_api//envoy/config/core/v3:pkg_cc_proto",
-        "@envoy//source/exe:envoy_common_lib",
+        "@envoy//source/exe:envoy_main_common_lib",
     ],
 )
 
@@ -42,7 +42,7 @@ envoy_cc_library(
         "@envoy//source/common/http:utility_lib",
         "@envoy_api//envoy/config/core/v3:pkg_cc_proto",
         "@modsecurity//:lib",
-        "@envoy//source/exe:envoy_common_lib",
+        "@envoy//source/exe:envoy_main_common_lib",
 	"@envoy//envoy/http:filter_interface",
     ],
 )
